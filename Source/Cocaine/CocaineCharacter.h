@@ -93,5 +93,8 @@ public:
 	/** Returns first person camera component **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
+	FORCEINLINE UCocaineMovementComponent* GetCocaineCharacterMovement() const {return CocaineMovementComponent;}
+
+	FCollisionQueryParams GetIgnoreCharacterParams() const;
 };
 
