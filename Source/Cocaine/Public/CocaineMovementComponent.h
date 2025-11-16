@@ -15,6 +15,7 @@ enum ECustomMovementMode
 {
 	CMOVE_None	UMETA(Hidden),
 	CMOVE_Slide	UMETA(DisplayName="Slide"),
+	CMOVE_Prone UMETA(DisplayName="Prone"),
 	CMOVE_MAX 	UMETA(Hidden),
 };
 UCLASS()
@@ -24,15 +25,24 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	
 	class FSavedMove_Cocaine : public FSavedMove_Character
 	{
-		//Flag
+	public:	
+		enum CompressedFlags
+		{
+			FLAG_Sprint		= 0x10,
+			FLAG_Custom_1	= 0x20,
+			FLAG_Custom_2	= 0x40,
+			FLAG_Custom_3	= 0x80,
+		};
+		//Flags
 		uint8 Saved_bWantsToSprint:1;
-
-		uint8 Saved_bPrevWantsToCrouch:1;
 		
-	public:
+		//Other Variables
+		uint8 Saved_bPrevWantsToCrouch:1;
+		uint8 Save_bWantsToProne:1;
+		
+
 		FSavedMove_Cocaine();
 		typedef FSavedMove_Character Super;
-		
 		virtual bool CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const override;
 		virtual void Clear() override;
 		virtual uint8 GetCompressedFlags() const override;
@@ -48,23 +58,36 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 		virtual FSavedMovePtr AllocateNewMove() override;
 	};
 	//Parameters
-	UPROPERTY(EditDefaultsOnly)float Sprint_MaxWalkSpeed;
-	UPROPERTY(EditDefaultsOnly)float Walk_MaxWalkSpeed;
-
-	UPROPERTY(EditDefaultsOnly)float Slide_MinSpeed=350;
-	UPROPERTY(EditDefaultsOnly)float Slide_EnterImpulse=500;
-	UPROPERTY(EditDefaultsOnly)float Slide_GravityForce=5000;
-	UPROPERTY(EditDefaultsOnly)float Slide_Friction=1.3;
+	UPROPERTY(EditDefaultsOnly) float MaxSprintSpeed=750.f;
+	
+	//slide
+	UPROPERTY(EditDefaultsOnly) float MinSlideSpeed=400.f;
+	UPROPERTY(EditDefaultsOnly) float MaxSlideSpeed=400.f;
+	UPROPERTY(EditDefaultsOnly) float SlideEnterImpulse=400.f;
+	UPROPERTY(EditDefaultsOnly) float SlideGravityForce=4000.f;
+	UPROPERTY(EditDefaultsOnly) float SlideFrictionFactor=.06f;
+	UPROPERTY(EditDefaultsOnly) float BrakingDecelerationSliding=1000.f;
+	
+	//prone
+	UPROPERTY(EditDefaultsOnly)float Prone_EnterHoldDuration=2.f;
+	UPROPERTY(EditDefaultsOnly)float ProneSlideEnterImpulse=300.f;
+	UPROPERTY(EditDefaultsOnly)float ProneMaxSpeed=300.f;
+	UPROPERTY(EditDefaultsOnly) float BrakingDecelerationProning=2500.f;
+	
 	//Transient
 	UPROPERTY(Transient) ACocaineCharacter* CocaineCharacterOwner;
-	
 	bool Safe_bWantsToSprint;
 	bool Safe_bPrevWantsToCrouch;
+	bool Safe_bWantsToProne;
+	
 public:
 	UCocaineMovementComponent();
+	//Character Movement Component
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 	virtual bool IsMovingOnGround() const override;
     virtual bool CanCrouchInCurrentState() const override;
+	virtual float GetMaxSpeed() const override;
+	virtual float GetMaxBrakingDeceleration() const override;
 protected:
 	virtual void InitializeComponent() override;
 
@@ -72,19 +95,33 @@ protected:
 	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
 	
 	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
+	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 	
 private:
-	void EnterSlide();
+	//slide
+	void EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode);
 	void ExitSlide();
+	bool CanSlide() const;
 	void PhysSlide(float DeltaTime, int32 Iterations);
 	bool GetSlideSurface(FHitResult& Hit) const;
+	//Prone
+	void TryEnterProne(){Safe_bWantsToSprint = true;}
+	UFUNCTION(Server, Reliable) void Server_EnterProne();
+	void EnterProne(EMovementMode PrevMode,ECustomMovementMode PrevCustomMode);
+	void ExitProne();
+	bool CanProne() const;
+	void PhysProne(float DeltaTime,int32 Iterations);
 public:
+	//Interface
 	UFUNCTION(BlueprintCallable) void SprintPressed();
 	UFUNCTION(BlueprintCallable) void SprintReleased();
 
 	UFUNCTION(BlueprintCallable) void CrouchPressed();
+	UFUNCTION(BlueprintCallable) void CrouchReleased();
+	
 	UFUNCTION(BlueprintCallable) bool IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const;
+	UFUNCTION(BlueprintCallable) bool IsMovementMode(EMovementMode InMovementMode) const;
 	
 };

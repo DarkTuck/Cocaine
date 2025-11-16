@@ -11,10 +11,10 @@ ACocainePlayerCameraManager::ACocainePlayerCameraManager()
 void ACocainePlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float DeltaTime)
 {
 	Super::UpdateViewTarget(OutVT, DeltaTime);
-	if (ACocaineCharacter* CocaineCharacter = Cast<ACocaineCharacter>(GetOwningPlayerController()->GetPawn()))
+	if (const ACocaineCharacter* CocaineCharacter = Cast<ACocaineCharacter>(GetOwningPlayerController()->GetPawn()))
 	{
-		UCocaineMovementComponent* CMC = CocaineCharacter->GetCocaineCharacterMovement();
-		FVector TargetCrouchOffset = FVector(0, 0, CMC->GetCrouchedHalfHeight()-CocaineCharacter->GetClass()->GetDefaultObject<ACharacter>()->GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+		const UCocaineMovementComponent* CMC = CocaineCharacter->GetCocaineCharacterMovement();
+		const FVector TargetCrouchOffset = FVector(0, 0, CMC->GetCrouchedHalfHeight()-CocaineCharacter->GetClass()->GetDefaultObject<ACharacter>()->GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
 		FVector Offset = FMath::Lerp(FVector::ZeroVector,TargetCrouchOffset,FMath::Clamp(CrouchBlendTime/CrouchBlendDuration,0.f,1.f));
 		if (CMC->IsCrouching())
 		{
