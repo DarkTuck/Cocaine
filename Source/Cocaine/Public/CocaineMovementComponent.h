@@ -79,6 +79,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	bool Safe_bWantsToSprint;
 	bool Safe_bPrevWantsToCrouch;
 	bool Safe_bWantsToProne;
+	FTimerHandle TimerHandle_EnterProne;
 	
 public:
 	UCocaineMovementComponent();

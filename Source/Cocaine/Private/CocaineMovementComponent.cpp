@@ -29,7 +29,7 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::Clear()
 uint8 UCocaineMovementComponent::FSavedMove_Cocaine::GetCompressedFlags() const
 {
 	uint8 Result = Super::GetCompressedFlags();
-	if (Saved_bWantsToSprint) Result |=  FLAG_Custom_0;
+	if (Saved_bWantsToSprint) Result |=  FLAG_Sprint;
 	return Result;
 }
 
@@ -74,7 +74,7 @@ FNetworkPredictionData_Client* UCocaineMovementComponent::GetPredictionData_Clie
 	}
 	return ClientPredictionData;
 }
-
+#pragma region CMC
 void UCocaineMovementComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
@@ -140,25 +140,36 @@ float UCocaineMovementComponent::GetMaxBrakingDeceleration() const
 
 void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
+	//Enter Slide
 	if (MovementMode==MOVE_Walking&&!bWantsToCrouch&&Safe_bPrevWantsToCrouch)
 	{
-		// Slide
-		if (MovementMode == MOVE_Walking && !bWantsToCrouch && Safe_bPrevWantsToCrouch)
+		if (CanSlide())
 		{
-			if (CanSlide())
-			{
-				SetMovementMode(MOVE_Custom, CMOVE_Slide);
-			}
-		}
-		else if (IsCustomMovementMode(CMOVE_Slide) && !bWantsToCrouch)
-		{
-			SetMovementMode(MOVE_Walking);
+			SetMovementMode(MOVE_Custom, CMOVE_Slide);
 		}
 	}
-
+	
+	//Exit Slide
 	if (IsCustomMovementMode(CMOVE_Slide)&&!bWantsToCrouch)
 	{
-		ExitSlide();
+		SetMovementMode(MOVE_Walking);
+	}
+	
+	//Enter Prone
+	if (Safe_bWantsToProne)
+	{
+		if (CanProne())
+		{
+			SetMovementMode(MOVE_Custom, CMOVE_Prone);
+			if (!CharacterOwner->HasAuthority()) Server_EnterProne();
+		}
+		Safe_bWantsToProne=false;
+	}
+	
+	//Exit Prone
+	if (IsCustomMovementMode(CMOVE_Prone)&&!bWantsToCrouch)
+	{
+		SetMovementMode(MOVE_Walking);
 	}
 	
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
@@ -167,11 +178,11 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
-	if (PreviousMovementMode==MOVE_Custom&&PreviousCustomMode==CMOVE_Slide) ExitSlide();
+	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Slide) ExitSlide();
 	if (PreviousMovementMode==MOVE_Custom && PreviousMovementMode==CMOVE_Prone) ExitProne();
 	
-	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode,(ECustomMovementMode)PreviousMovementMode);
-	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode,(ECustomMovementMode)PreviousMovementMode);
+	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
+	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
 }
 
 void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
@@ -189,7 +200,8 @@ void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement mode!"));
 	}
 }
-
+#pragma endregion
+#pragma region Slide
 void UCocaineMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
 	bWantsToCrouch = true;
@@ -428,6 +440,7 @@ bool UCocaineMovementComponent::GetSlideSurface(FHitResult& Hit) const
 	const FName ProfileName=TEXT("BlockAll");
 	return GetWorld()->LineTraceSingleByProfile(Hit,Start,End,ProfileName,CocaineCharacterOwner->GetIgnoreCharacterParams());
 }
+#pragma endregion
 #pragma region Prone
 void UCocaineMovementComponent::Server_EnterProne_Implementation()
 {
@@ -668,11 +681,12 @@ void UCocaineMovementComponent::SprintReleased()
 void UCocaineMovementComponent::CrouchPressed()
 {
 	bWantsToCrouch=!bWantsToCrouch;
-	
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle_EnterProne,this,&UCocaineMovementComponent::TryEnterProne,Prone_EnterHoldDuration);
 }
 
 void UCocaineMovementComponent::CrouchReleased()
 {
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_EnterProne);
 }
 
 bool UCocaineMovementComponent::IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const
@@ -688,4 +702,3 @@ UCocaineMovementComponent::UCocaineMovementComponent()
 {
 	NavAgentProps.bCanCrouch=true;
 }
-
