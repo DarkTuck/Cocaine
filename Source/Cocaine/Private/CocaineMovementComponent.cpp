@@ -4,6 +4,7 @@
 
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
+#include "Net/UnrealNetwork.h"
 #pragma region Saved Move
 UCocaineMovementComponent::FSavedMove_Cocaine::FSavedMove_Cocaine()
 {
@@ -17,19 +18,30 @@ bool UCocaineMovementComponent::FSavedMove_Cocaine::CanCombineWith(const FSavedM
 	{
 		return false;
 	}
+	if (Saved_bWantsToDash!=NewCocaineMove->Saved_bWantsToDash)
+	{
+		return false;
+	}
 	return FSavedMove_Character::CanCombineWith(NewMove, InCharacter, MaxDelta);
 }
 
 void UCocaineMovementComponent::FSavedMove_Cocaine::Clear()
 {
 	FSavedMove_Character::Clear();
+	
 	Saved_bWantsToSprint = 0;
+	Saved_bWantsToDash = 0;
+	
+	Save_bWantsToProne = 0;
+	Saved_bPrevWantsToCrouch = 0;
 }
 
 uint8 UCocaineMovementComponent::FSavedMove_Cocaine::GetCompressedFlags() const
 {
 	uint8 Result = Super::GetCompressedFlags();
 	if (Saved_bWantsToSprint) Result |=  FLAG_Sprint;
+	if (Saved_bWantsToDash) Result |=  FLAG_Dash;
+	
 	return Result;
 }
 
@@ -40,6 +52,7 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::SetMoveFor(ACharacter* C, fl
 	Saved_bWantsToSprint = CharacterMovement->Safe_bWantsToSprint;
 	Saved_bPrevWantsToCrouch=CharacterMovement->Safe_bPrevWantsToCrouch;
 	Save_bWantsToProne=CharacterMovement->Safe_bWantsToProne;
+	Saved_bWantsToDash=CharacterMovement->Safe_bWantsToDash;
 }
 
 void UCocaineMovementComponent::FSavedMove_Cocaine::PrepMoveFor(ACharacter* C)
@@ -49,8 +62,10 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::PrepMoveFor(ACharacter* C)
 	CharacterMovement->Safe_bWantsToSprint = Saved_bWantsToSprint;
 	CharacterMovement->Safe_bPrevWantsToCrouch=Saved_bPrevWantsToCrouch;
 	CharacterMovement->Safe_bWantsToProne=Save_bWantsToProne;
+	CharacterMovement->Safe_bWantsToDash=Saved_bWantsToDash;
 }
 #pragma endregion
+
 #pragma region Client Network Prediction Data
 UCocaineMovementComponent::FNetworkPredictionData_Client_Cocaine::FNetworkPredictionData_Client_Cocaine(
 	const UCharacterMovementComponent& ClientMovement) : Super(ClientMovement)
@@ -61,7 +76,6 @@ FSavedMovePtr UCocaineMovementComponent::FNetworkPredictionData_Client_Cocaine::
 {
 	return FSavedMovePtr(new FSavedMove_Cocaine());
 }
-#pragma endregion
 FNetworkPredictionData_Client* UCocaineMovementComponent::GetPredictionData_Client() const
 {
 	check(PawnOwner != nullptr);
@@ -74,7 +88,13 @@ FNetworkPredictionData_Client* UCocaineMovementComponent::GetPredictionData_Clie
 	}
 	return ClientPredictionData;
 }
+#pragma endregion
+
 #pragma region CMC
+UCocaineMovementComponent::UCocaineMovementComponent()
+{
+	NavAgentProps.bCanCrouch=true;
+}
 void UCocaineMovementComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
@@ -85,7 +105,8 @@ void UCocaineMovementComponent::UpdateFromCompressedFlags(uint8 InFlags)
 {
 	Super::UpdateFromCompressedFlags(InFlags);
 
-	Safe_bWantsToSprint =(InFlags & FSavedMove_Character::FLAG_Custom_0)!=0;
+	Safe_bWantsToSprint =(InFlags & FSavedMove_Cocaine::FLAG_Sprint)!=0;
+	Safe_bWantsToDash =(InFlags & FSavedMove_Cocaine::FLAG_Dash)!=0;
 }
 
 void UCocaineMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
@@ -94,7 +115,7 @@ void UCocaineMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVec
 	Safe_bPrevWantsToCrouch = bWantsToCrouch;
 }
 
-//getters/helpers
+// getters/helpers
 bool UCocaineMovementComponent::IsMovingOnGround() const
 {
 	return Super::IsMovingOnGround()||IsCustomMovementMode(CMOVE_Slide)||IsCustomMovementMode(CMOVE_Prone);
@@ -140,22 +161,20 @@ float UCocaineMovementComponent::GetMaxBrakingDeceleration() const
 
 void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
-	//Enter Slide
+	// Slide
 	if (MovementMode==MOVE_Walking&&!bWantsToCrouch&&Safe_bPrevWantsToCrouch)
 	{
 		if (CanSlide())
 		{
 			SetMovementMode(MOVE_Custom, CMOVE_Slide);
 		}
-	}
-	
-	//Exit Slide
+	}// Enter
 	if (IsCustomMovementMode(CMOVE_Slide)&&!bWantsToCrouch)
 	{
 		SetMovementMode(MOVE_Walking);
-	}
+	}// Exit
 	
-	//Enter Prone
+	// Prone
 	if (Safe_bWantsToProne)
 	{
 		if (CanProne())
@@ -164,14 +183,28 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 			if (!CharacterOwner->HasAuthority()) Server_EnterProne();
 		}
 		Safe_bWantsToProne=false;
-	}
-	
-	//Exit Prone
+	}// Enter
 	if (IsCustomMovementMode(CMOVE_Prone)&&!bWantsToCrouch)
 	{
 		SetMovementMode(MOVE_Walking);
+	}// Exit
+
+	// Dash
+	const bool bAuthProxy = CharacterOwner->HasAuthority() && !CharacterOwner->IsLocallyControlled();
+	if (Safe_bWantsToDash&&CanDash())
+	{
+		if (!bAuthProxy||GetWorld()->GetTimeSeconds() - DashStartTime > AuthDashCooldownDuration)
+		{
+			PerformDash();
+			Safe_bWantsToDash=false;
+			Proxy_bDashStart=!Proxy_bDashStart;
+		}
+		else
+		{
+			UE_LOG(LogTemp,Warning,TEXT("Client tried to cheat"));
+		}
 	}
-	
+
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
 }
 
@@ -201,6 +234,7 @@ void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 	}
 }
 #pragma endregion
+
 #pragma region Slide
 void UCocaineMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
@@ -441,6 +475,7 @@ bool UCocaineMovementComponent::GetSlideSurface(FHitResult& Hit) const
 	return GetWorld()->LineTraceSingleByProfile(Hit,Start,End,ProfileName,CocaineCharacterOwner->GetIgnoreCharacterParams());
 }
 #pragma endregion
+
 #pragma region Prone
 void UCocaineMovementComponent::Server_EnterProne_Implementation()
 {
@@ -666,7 +701,38 @@ void UCocaineMovementComponent::PhysProne(float DeltaTime, int32 Iterations)
 	}
 }
 #pragma endregion
-#pragma region Input
+
+#pragma region Dash
+
+void UCocaineMovementComponent::OnDashCooldownFinished()
+{
+	Safe_bWantsToDash=true;
+}
+
+bool UCocaineMovementComponent::CanDash() const
+{
+	return IsWalking() && !IsCrouching();
+}
+
+void UCocaineMovementComponent::PerformDash()
+{
+	DashStartTime=GetWorld()->GetTimeSeconds();
+	
+	FVector DashDirection = (Acceleration.IsNearlyZero() ? UpdatedComponent->GetForwardVector() : Acceleration).GetSafeNormal2D();
+	DashDirection += FVector::UpVector * .1f;
+	Velocity = DashImpulse * (DashDirection + FVector::UpVector * .1f);
+
+	const FQuat NewRotation = FRotationMatrix::MakeFromXZ(DashDirection,FVector::UpVector).ToQuat();
+	FHitResult Hit;
+	SafeMoveUpdatedComponent(FVector::ZeroVector,NewRotation,false,Hit);
+	
+	SetMovementMode(MOVE_Falling);
+	
+	DashStartDelegate.Broadcast();
+}
+#pragma endregion
+
+#pragma region Interface
 //toggles flag
 void UCocaineMovementComponent::SprintPressed()
 {
@@ -683,10 +749,27 @@ void UCocaineMovementComponent::CrouchPressed()
 	bWantsToCrouch=!bWantsToCrouch;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle_EnterProne,this,&UCocaineMovementComponent::TryEnterProne,Prone_EnterHoldDuration);
 }
-
 void UCocaineMovementComponent::CrouchReleased()
 {
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_EnterProne);
+}
+
+void UCocaineMovementComponent::DashPressed()
+{
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime-DashStartTime>=DashCooldownDuration)
+	{
+		Safe_bWantsToDash=true;
+	}
+	else
+	{
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_DashCooldown,this,&UCocaineMovementComponent::OnDashCooldownFinished,DashCooldownDuration-(CurrentTime-DashStartTime));
+	}
+}
+void UCocaineMovementComponent::DashReleased()
+{
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_DashCooldown);
+	Safe_bWantsToDash=false;
 }
 
 bool UCocaineMovementComponent::IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const
@@ -698,7 +781,21 @@ bool UCocaineMovementComponent::IsMovementMode(EMovementMode InMovementMode) con
 	return InMovementMode == MovementMode;
 }
 #pragma endregion
-UCocaineMovementComponent::UCocaineMovementComponent()
+
+#pragma region Replication
+
+void UCocaineMovementComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
-	NavAgentProps.bCanCrouch=true;
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME_CONDITION(UCocaineMovementComponent,Proxy_bDashStart,COND_SkipOwner)
 }
+
+void UCocaineMovementComponent::OnRep_DashStart()
+{
+	if (Proxy_bDashStart)
+	{
+		DashStartDelegate.Broadcast();
+	}
+}
+#pragma endregion

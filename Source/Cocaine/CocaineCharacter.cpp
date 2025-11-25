@@ -15,6 +15,8 @@ ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer
 : Super(ObjectInitializer.SetDefaultSubobjectClass<UCocaineMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	CocaineMovementComponent=Cast<UCocaineMovementComponent>(GetCharacterMovement());
+	CocaineMovementComponent->SetIsReplicated(true);
+	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	
