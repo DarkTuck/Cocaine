@@ -5,6 +5,22 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
+#include "DrawDebugHelpers.h"
+
+// Helper Macros
+#if 1
+float MacroDuration = 2.f;
+#define SLOG(x) GEngine->AddOnScreenDebugMessage(-1, MacroDuration ? MacroDuration:-1.f, FColor::Yellow,x); //write debug on screen macro
+#define POINT(x,c) DrawDebugPoint(GetWolrd(),x,10,c,!MacroDuration,MacroDuration); // draw debug point macro
+#define LINE(x1,x2,c) DrawDebugLine(GetWolrd(),x1,x2,c,!MacroDuration,MacroDuration); // draw debug line macro
+#define CAPSULE(x,c) DrawDebugCapsule(GetWolrd(),x,CapHH(),CapR(),FQuat::Identity,c,!MacroDuration,MacroDuration); // draw debug capsule macro
+#else
+#define SLOG(x)
+#define POINT(x,c)
+#define LINE(x,c)
+#define CAPSULE(x,c)
+#endif
+
 #pragma region Saved Move
 UCocaineMovementComponent::FSavedMove_Cocaine::FSavedMove_Cocaine()
 {
@@ -31,8 +47,12 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::Clear()
 	
 	Saved_bWantsToSprint = 0;
 	Saved_bWantsToDash = 0;
+	Saved_bPressedCocaineJump=0;
 	
-	Save_bWantsToProne = 0;
+	Saved_bHadAnimRootMotion=0;
+	Saved_bTransitionFinished=0;
+	
+	Saved_bWantsToProne = 0;
 	Saved_bPrevWantsToCrouch = 0;
 }
 
@@ -41,6 +61,7 @@ uint8 UCocaineMovementComponent::FSavedMove_Cocaine::GetCompressedFlags() const
 	uint8 Result = Super::GetCompressedFlags();
 	if (Saved_bWantsToSprint) Result |=  FLAG_Sprint;
 	if (Saved_bWantsToDash) Result |=  FLAG_Dash;
+	if (Saved_bPressedCocaineJump) Result |= FLAG_JumpPressed;
 	
 	return Result;
 }
@@ -51,8 +72,13 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::SetMoveFor(ACharacter* C, fl
 	const UCocaineMovementComponent* CharacterMovement=Cast<UCocaineMovementComponent>(C->GetCharacterMovement());
 	Saved_bWantsToSprint = CharacterMovement->Safe_bWantsToSprint;
 	Saved_bPrevWantsToCrouch=CharacterMovement->Safe_bPrevWantsToCrouch;
-	Save_bWantsToProne=CharacterMovement->Safe_bWantsToProne;
+	Saved_bWantsToProne=CharacterMovement->Safe_bWantsToProne;
 	Saved_bWantsToDash=CharacterMovement->Safe_bWantsToDash;
+	
+	Saved_bPressedCocaineJump=CharacterMovement->CocaineCharacterOwner->bPressedCocaineJump;
+	
+	Saved_bHadAnimRootMotion = CharacterMovement->Safe_bHadAnimRootMotion;
+	Saved_bTransitionFinished = CharacterMovement->Safe_bTransitionFinished;
 }
 
 void UCocaineMovementComponent::FSavedMove_Cocaine::PrepMoveFor(ACharacter* C)
@@ -61,8 +87,12 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::PrepMoveFor(ACharacter* C)
 	UCocaineMovementComponent* CharacterMovement=Cast<UCocaineMovementComponent>(C->GetCharacterMovement());
 	CharacterMovement->Safe_bWantsToSprint = Saved_bWantsToSprint;
 	CharacterMovement->Safe_bPrevWantsToCrouch=Saved_bPrevWantsToCrouch;
-	CharacterMovement->Safe_bWantsToProne=Save_bWantsToProne;
+	CharacterMovement->Safe_bWantsToProne=Saved_bWantsToProne;
 	CharacterMovement->Safe_bWantsToDash=Saved_bWantsToDash;
+	
+	CharacterMovement->CocaineCharacterOwner->bPressedCocaineJump=Saved_bPressedCocaineJump;
+	CharacterMovement->Safe_bHadAnimRootMotion=Saved_bHadAnimRootMotion;
+	CharacterMovement->Safe_bTransitionFinished=Saved_bTransitionFinished;
 }
 #pragma endregion
 
@@ -76,18 +106,6 @@ FSavedMovePtr UCocaineMovementComponent::FNetworkPredictionData_Client_Cocaine::
 {
 	return FSavedMovePtr(new FSavedMove_Cocaine());
 }
-FNetworkPredictionData_Client* UCocaineMovementComponent::GetPredictionData_Client() const
-{
-	check(PawnOwner != nullptr);
-	if (ClientPredictionData== nullptr)
-	{
-		UCocaineMovementComponent*MutableThis=const_cast<UCocaineMovementComponent*>(this);
-		MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_Cocaine(*this);
-		MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist=92.f;
-		MutableThis->ClientPredictionData->NoSmoothNetUpdateDist=140.f;
-	}
-	return ClientPredictionData;
-}
 #pragma endregion
 
 #pragma region CMC
@@ -100,7 +118,7 @@ void UCocaineMovementComponent::InitializeComponent()
 	Super::InitializeComponent();
 	CocaineCharacterOwner=Cast<ACocaineCharacter>(GetOwner());
 }
-
+// Network
 void UCocaineMovementComponent::UpdateFromCompressedFlags(uint8 InFlags)
 {
 	Super::UpdateFromCompressedFlags(InFlags);
@@ -108,12 +126,17 @@ void UCocaineMovementComponent::UpdateFromCompressedFlags(uint8 InFlags)
 	Safe_bWantsToSprint =(InFlags & FSavedMove_Cocaine::FLAG_Sprint)!=0;
 	Safe_bWantsToDash =(InFlags & FSavedMove_Cocaine::FLAG_Dash)!=0;
 }
-
-void UCocaineMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
+FNetworkPredictionData_Client* UCocaineMovementComponent::GetPredictionData_Client() const
 {
-	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
-	if (IsMovementMode(MOVE_Flying) && !HasRootMotionSources()) SetMovementMode(MOVE_Walking);
-	Safe_bPrevWantsToCrouch = bWantsToCrouch;
+	check(PawnOwner != nullptr);
+	if (ClientPredictionData== nullptr)
+	{
+		UCocaineMovementComponent*MutableThis=const_cast<UCocaineMovementComponent*>(this);
+		MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_Cocaine(*this);
+		MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist=92.f;
+		MutableThis->ClientPredictionData->NoSmoothNetUpdateDist=140.f;
+	}
+	return ClientPredictionData;
 }
 
 // getters/helpers
@@ -121,12 +144,10 @@ bool UCocaineMovementComponent::IsMovingOnGround() const
 {
 	return Super::IsMovingOnGround()||IsCustomMovementMode(CMOVE_Slide)||IsCustomMovementMode(CMOVE_Prone);
 }
-
 bool UCocaineMovementComponent::CanCrouchInCurrentState() const
 {
 	return Super::CanCrouchInCurrentState()&&IsMovingOnGround();
 }
-
 float UCocaineMovementComponent::GetMaxSpeed() const
 {
 	if (IsMovementMode(MOVE_Walking)&&Safe_bWantsToSprint && !IsCrouching()) return MaxSprintSpeed;
@@ -144,7 +165,6 @@ float UCocaineMovementComponent::GetMaxSpeed() const
 		return -1.f;
 	}
 }
-
 float UCocaineMovementComponent::GetMaxBrakingDeceleration() const
 {
 	if (MovementMode!=MOVE_Custom) return Super::GetMaxBrakingDeceleration();
@@ -160,6 +180,7 @@ float UCocaineMovementComponent::GetMaxBrakingDeceleration() const
 	}
 }
 
+// Movement Pipeline
 void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
 	// Slide
@@ -205,20 +226,37 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 			UE_LOG(LogTemp,Warning,TEXT("Client tried to cheat"));
 		}
 	}
+	
+	// Try Mantle
+	if (CocaineCharacterOwner->bPressedCocaineJump)
+	{
+		if (TryMantle())
+		{
+			CocaineCharacterOwner->StopJumping();
+		}
+		else
+		{
+			SLOG("Failed Mantle, Reverting to jump")
+			CocaineCharacterOwner->bPressedCocaineJump = false;
+			CharacterOwner->bPressedJump=true;
+			CharacterOwner->CheckJumpInput(DeltaSeconds);
+		}
+	}
 
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
 }
 
-void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+void UCocaineMovementComponent::UpdateCharacterStateAfterMovement(float DeltaSeconds)
 {
-	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
-	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Slide) ExitSlide();
-	if (PreviousMovementMode==MOVE_Custom && PreviousMovementMode==CMOVE_Prone) ExitProne();
-	
-	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
-	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
+	Super::UpdateCharacterStateAfterMovement(DeltaSeconds);
 }
 
+void UCocaineMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
+{
+	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
+	if (IsMovementMode(MOVE_Flying) && !HasRootMotionSources()) SetMovementMode(MOVE_Walking);
+	Safe_bPrevWantsToCrouch = bWantsToCrouch;
+}
 void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 {
 	Super::PhysCustom(deltaTime, Iterations);
@@ -234,6 +272,17 @@ void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement mode!"));
 	}
 }
+
+// Movement Event
+void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+ {
+ 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
+ 	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Slide) ExitSlide();
+ 	if (PreviousMovementMode==MOVE_Custom && PreviousMovementMode==CMOVE_Prone) ExitProne();
+ 	
+ 	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
+ 	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
+ }
 #pragma endregion
 
 #pragma region Slide
@@ -744,6 +793,36 @@ void UCocaineMovementComponent::PerformDashRootMotion()
 }
 #pragma endregion
 
+#pragma region Mantle
+bool UCocaineMovementComponent::TryMantle()
+{
+	SLOG("TriedMantle");
+	return false;
+}
+
+FVector UCocaineMovementComponent::GetMantleStartLocation(FHitResult FrontHit, FHitResult SurfaceHit, bool bTallMantle) const
+{
+	return FVector::ZeroVector;
+}
+#pragma endregion 
+#pragma region Helpers
+
+bool UCocaineMovementComponent::IsServer() const
+{
+	return CharacterOwner->HasAuthority();
+}
+
+float UCocaineMovementComponent::CapR() const
+{
+	return CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleRadius();
+}
+
+float UCocaineMovementComponent::CapHH() const
+{
+	return CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+}
+#pragma endregion
+
 #pragma region Interface
 //toggles flag
 void UCocaineMovementComponent::SprintPressed()
@@ -810,5 +889,13 @@ void UCocaineMovementComponent::OnRep_DashStart()
 		if (bRootMotionDash) CharacterOwner->PlayAnimMontage(DashMontage);
 		DashStartDelegate.Broadcast();
 	}
+}
+
+void UCocaineMovementComponent::OnRep_ShortMantle()
+{
+}
+
+void UCocaineMovementComponent::OnRep_TallMantle()
+{
 }
 #pragma endregion

@@ -51,9 +51,13 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	class UInputAction* MouseLookAction;
-	
+public:
+	bool bPressedCocaineJump;
 public:
 	ACocaineCharacter(const FObjectInitializer& ObjectInitializer);
+	
+	virtual void Jump() override;
+	virtual void StopJumping() override;
 
 protected:
 

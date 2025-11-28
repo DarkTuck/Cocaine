@@ -49,6 +49,19 @@ ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer
 	GetCharacterMovement()->AirControl = 0.5f;
 }
 
+void ACocaineCharacter::Jump()
+{
+	Super::Jump();
+	bPressedCocaineJump=true;
+	bPressedJump=false;
+}
+
+void ACocaineCharacter::StopJumping()
+{
+	Super::StopJumping();
+	bPressedCocaineJump=false;
+}
+
 void ACocaineCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {	
 	// Set up action bindings
