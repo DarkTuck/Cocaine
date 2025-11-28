@@ -112,6 +112,7 @@ void UCocaineMovementComponent::UpdateFromCompressedFlags(uint8 InFlags)
 void UCocaineMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
 {
 	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
+	if (IsMovementMode(MOVE_Flying) && !HasRootMotionSources()) SetMovementMode(MOVE_Walking);
 	Safe_bPrevWantsToCrouch = bWantsToCrouch;
 }
 
@@ -195,7 +196,7 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	{
 		if (!bAuthProxy||GetWorld()->GetTimeSeconds() - DashStartTime > AuthDashCooldownDuration)
 		{
-			PerformDash();
+			bRootMotionDash?PerformDashRootMotion():PerformDash();
 			Safe_bWantsToDash=false;
 			Proxy_bDashStart=!Proxy_bDashStart;
 		}
@@ -711,7 +712,7 @@ void UCocaineMovementComponent::OnDashCooldownFinished()
 
 bool UCocaineMovementComponent::CanDash() const
 {
-	return IsWalking() && !IsCrouching();
+	return IsWalking() && !IsCrouching() /*|| IsFalling()*/; //to uncomment if player could dash in the air (probably should be variable but for now dash can end up as unused code)
 }
 
 void UCocaineMovementComponent::PerformDash()
@@ -727,6 +728,17 @@ void UCocaineMovementComponent::PerformDash()
 	SafeMoveUpdatedComponent(FVector::ZeroVector,NewRotation,false,Hit);
 	
 	SetMovementMode(MOVE_Falling);
+	
+	DashStartDelegate.Broadcast();
+}
+
+void UCocaineMovementComponent::PerformDashRootMotion()
+{
+	DashStartTime=GetWorld()->GetTimeSeconds();
+	
+	//changing mode to flying will not apply gravity to RootMotion animation (Z coordinate)
+	SetMovementMode(bUseGravityInRootMotion ? MOVE_Falling : MOVE_Flying);
+	CharacterOwner->PlayAnimMontage(DashMontage);
 	
 	DashStartDelegate.Broadcast();
 }
@@ -795,6 +807,7 @@ void UCocaineMovementComponent::OnRep_DashStart()
 {
 	if (Proxy_bDashStart)
 	{
+		if (bRootMotionDash) CharacterOwner->PlayAnimMontage(DashMontage);
 		DashStartDelegate.Broadcast();
 	}
 }

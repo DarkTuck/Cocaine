@@ -61,6 +61,8 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	};
 	// Parameters
 	UPROPERTY(EditDefaultsOnly) float MaxSprintSpeed=750.f;
+	UPROPERTY(EditDefaultsOnly) bool bUseGravityInRootMotion=true;
+	UPROPERTY(EditDefaultsOnly) bool bRootMotionDash=false;
 	
 	// slide
 	UPROPERTY(EditDefaultsOnly) float MinSlideSpeed=400.f;
@@ -80,6 +82,9 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly) float DashImpulse=1000.f;
 	UPROPERTY(EditDefaultsOnly) float DashCooldownDuration=1.f;
 	UPROPERTY(EditDefaultsOnly) float AuthDashCooldownDuration=.9f;
+	//Dash RootMotion
+	UPROPERTY(EditDefaultsOnly) UAnimMontage* DashMontage;
+	
 #pragma region Transient
 	UPROPERTY(Transient) ACocaineCharacter* CocaineCharacterOwner;
 	
@@ -136,6 +141,7 @@ private:
 	void OnDashCooldownFinished();
 	bool CanDash() const;
 	void PerformDash();
+	void PerformDashRootMotion();
 public:
 	// Interface
 	UFUNCTION(BlueprintCallable) void SprintPressed();
