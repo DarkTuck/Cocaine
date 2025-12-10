@@ -180,7 +180,7 @@ private:
 	//Mantle
 private:
 	bool TryMantle();
-	FVector GetMantleStartLocation(FHitResult FrontHit,FHitResult SurfaceHit, bool bTallMantle) const;
+	FVector GetMantleStartLocation(const FHitResult& FrontHit, const FHitResult& SurfaceHit, bool bTallMantle) const;
 	
 	//Helpers
 private:
