@@ -4,6 +4,23 @@
 
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
+#include "Net/UnrealNetwork.h"
+#include "DrawDebugHelpers.h"
+
+// Helper Macros
+#if 1
+float MacroDuration = 2.f;
+#define SLOG(x) GEngine->AddOnScreenDebugMessage(-1, MacroDuration ? MacroDuration:-1.f, FColor::Yellow,x); //write debug on screen macro
+#define POINT(x,c) DrawDebugPoint(GetWorld(),x,10,c,!MacroDuration,MacroDuration); // draw debug point macro
+#define LINE(x1,x2,c) DrawDebugLine(GetWorld(),x1,x2,c,!MacroDuration,MacroDuration); // draw debug line macro
+#define CAPSULE(x,c) DrawDebugCapsule(GetWorld(),x,CapHH(),CapR(),FQuat::Identity,c,!MacroDuration,MacroDuration); // draw debug capsule macro
+#else
+#define SLOG(x)
+#define POINT(x,c)
+#define LINE(x,c)
+#define CAPSULE(x,c)
+#endif
+
 #pragma region Saved Move
 UCocaineMovementComponent::FSavedMove_Cocaine::FSavedMove_Cocaine()
 {
@@ -17,19 +34,35 @@ bool UCocaineMovementComponent::FSavedMove_Cocaine::CanCombineWith(const FSavedM
 	{
 		return false;
 	}
+	if (Saved_bWantsToDash!=NewCocaineMove->Saved_bWantsToDash)
+	{
+		return false;
+	}
 	return FSavedMove_Character::CanCombineWith(NewMove, InCharacter, MaxDelta);
 }
 
 void UCocaineMovementComponent::FSavedMove_Cocaine::Clear()
 {
 	FSavedMove_Character::Clear();
+	
 	Saved_bWantsToSprint = 0;
+	Saved_bWantsToDash = 0;
+	Saved_bPressedCocaineJump=0;
+	
+	Saved_bHadAnimRootMotion=0;
+	Saved_bTransitionFinished=0;
+	
+	Saved_bWantsToProne = 0;
+	Saved_bPrevWantsToCrouch = 0;
 }
 
 uint8 UCocaineMovementComponent::FSavedMove_Cocaine::GetCompressedFlags() const
 {
 	uint8 Result = Super::GetCompressedFlags();
 	if (Saved_bWantsToSprint) Result |=  FLAG_Sprint;
+	if (Saved_bWantsToDash) Result |=  FLAG_Dash;
+	if (Saved_bPressedCocaineJump) Result |= FLAG_JumpPressed;
+	
 	return Result;
 }
 
@@ -39,7 +72,13 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::SetMoveFor(ACharacter* C, fl
 	const UCocaineMovementComponent* CharacterMovement=Cast<UCocaineMovementComponent>(C->GetCharacterMovement());
 	Saved_bWantsToSprint = CharacterMovement->Safe_bWantsToSprint;
 	Saved_bPrevWantsToCrouch=CharacterMovement->Safe_bPrevWantsToCrouch;
-	Save_bWantsToProne=CharacterMovement->Safe_bWantsToProne;
+	Saved_bWantsToProne=CharacterMovement->Safe_bWantsToProne;
+	Saved_bWantsToDash=CharacterMovement->Safe_bWantsToDash;
+	
+	Saved_bPressedCocaineJump=CharacterMovement->CocaineCharacterOwner->bPressedCocaineJump;
+	
+	Saved_bHadAnimRootMotion = CharacterMovement->Safe_bHadAnimRootMotion;
+	Saved_bTransitionFinished = CharacterMovement->Safe_bTransitionFinished;
 }
 
 void UCocaineMovementComponent::FSavedMove_Cocaine::PrepMoveFor(ACharacter* C)
@@ -48,9 +87,15 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::PrepMoveFor(ACharacter* C)
 	UCocaineMovementComponent* CharacterMovement=Cast<UCocaineMovementComponent>(C->GetCharacterMovement());
 	CharacterMovement->Safe_bWantsToSprint = Saved_bWantsToSprint;
 	CharacterMovement->Safe_bPrevWantsToCrouch=Saved_bPrevWantsToCrouch;
-	CharacterMovement->Safe_bWantsToProne=Save_bWantsToProne;
+	CharacterMovement->Safe_bWantsToProne=Saved_bWantsToProne;
+	CharacterMovement->Safe_bWantsToDash=Saved_bWantsToDash;
+	
+	CharacterMovement->CocaineCharacterOwner->bPressedCocaineJump=Saved_bPressedCocaineJump;
+	CharacterMovement->Safe_bHadAnimRootMotion=Saved_bHadAnimRootMotion;
+	CharacterMovement->Safe_bTransitionFinished=Saved_bTransitionFinished;
 }
 #pragma endregion
+
 #pragma region Client Network Prediction Data
 UCocaineMovementComponent::FNetworkPredictionData_Client_Cocaine::FNetworkPredictionData_Client_Cocaine(
 	const UCharacterMovementComponent& ClientMovement) : Super(ClientMovement)
@@ -62,6 +107,25 @@ FSavedMovePtr UCocaineMovementComponent::FNetworkPredictionData_Client_Cocaine::
 	return FSavedMovePtr(new FSavedMove_Cocaine());
 }
 #pragma endregion
+
+#pragma region CMC
+UCocaineMovementComponent::UCocaineMovementComponent()
+{
+	NavAgentProps.bCanCrouch=true;
+}
+void UCocaineMovementComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+	CocaineCharacterOwner=Cast<ACocaineCharacter>(GetOwner());
+}
+// Network
+void UCocaineMovementComponent::UpdateFromCompressedFlags(uint8 InFlags)
+{
+	Super::UpdateFromCompressedFlags(InFlags);
+
+	Safe_bWantsToSprint =(InFlags & FSavedMove_Cocaine::FLAG_Sprint)!=0;
+	Safe_bWantsToDash =(InFlags & FSavedMove_Cocaine::FLAG_Dash)!=0;
+}
 FNetworkPredictionData_Client* UCocaineMovementComponent::GetPredictionData_Client() const
 {
 	check(PawnOwner != nullptr);
@@ -74,37 +138,16 @@ FNetworkPredictionData_Client* UCocaineMovementComponent::GetPredictionData_Clie
 	}
 	return ClientPredictionData;
 }
-#pragma region CMC
-void UCocaineMovementComponent::InitializeComponent()
-{
-	Super::InitializeComponent();
-	CocaineCharacterOwner=Cast<ACocaineCharacter>(GetOwner());
-}
 
-void UCocaineMovementComponent::UpdateFromCompressedFlags(uint8 InFlags)
-{
-	Super::UpdateFromCompressedFlags(InFlags);
-
-	Safe_bWantsToSprint =(InFlags & FSavedMove_Character::FLAG_Custom_0)!=0;
-}
-
-void UCocaineMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
-{
-	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
-	Safe_bPrevWantsToCrouch = bWantsToCrouch;
-}
-
-//getters/helpers
+// Getters / Helpers
 bool UCocaineMovementComponent::IsMovingOnGround() const
 {
 	return Super::IsMovingOnGround()||IsCustomMovementMode(CMOVE_Slide)||IsCustomMovementMode(CMOVE_Prone);
 }
-
 bool UCocaineMovementComponent::CanCrouchInCurrentState() const
 {
 	return Super::CanCrouchInCurrentState()&&IsMovingOnGround();
 }
-
 float UCocaineMovementComponent::GetMaxSpeed() const
 {
 	if (IsMovementMode(MOVE_Walking)&&Safe_bWantsToSprint && !IsCrouching()) return MaxSprintSpeed;
@@ -122,7 +165,6 @@ float UCocaineMovementComponent::GetMaxSpeed() const
 		return -1.f;
 	}
 }
-
 float UCocaineMovementComponent::GetMaxBrakingDeceleration() const
 {
 	if (MovementMode!=MOVE_Custom) return Super::GetMaxBrakingDeceleration();
@@ -138,24 +180,23 @@ float UCocaineMovementComponent::GetMaxBrakingDeceleration() const
 	}
 }
 
+// Movement Pipeline
 void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
-	//Enter Slide
+	// Slide
 	if (MovementMode==MOVE_Walking&&!bWantsToCrouch&&Safe_bPrevWantsToCrouch)
 	{
 		if (CanSlide())
 		{
 			SetMovementMode(MOVE_Custom, CMOVE_Slide);
 		}
-	}
-	
-	//Exit Slide
+	}// Enter
 	if (IsCustomMovementMode(CMOVE_Slide)&&!bWantsToCrouch)
 	{
 		SetMovementMode(MOVE_Walking);
-	}
+	}// Exit
 	
-	//Enter Prone
+	// Prone
 	if (Safe_bWantsToProne)
 	{
 		if (CanProne())
@@ -164,27 +205,90 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 			if (!CharacterOwner->HasAuthority()) Server_EnterProne();
 		}
 		Safe_bWantsToProne=false;
-	}
-	
-	//Exit Prone
+	}// Enter
 	if (IsCustomMovementMode(CMOVE_Prone)&&!bWantsToCrouch)
 	{
 		SetMovementMode(MOVE_Walking);
+	}// Exit
+
+	// Dash
+	const bool bAuthProxy = CharacterOwner->HasAuthority() && !CharacterOwner->IsLocallyControlled();
+	if (Safe_bWantsToDash&&CanDash())
+	{
+		if (!bAuthProxy||GetWorld()->GetTimeSeconds() - DashStartTime > AuthDashCooldownDuration)
+		{
+			bRootMotionDash?PerformDashRootMotion():PerformDash();
+			Safe_bWantsToDash=false;
+			Proxy_bDashStart=!Proxy_bDashStart;
+		}
+		else
+		{
+			UE_LOG(LogTemp,Warning,TEXT("Client tried to cheat"));
+		}
 	}
 	
+	// Try Mantle
+	if (CocaineCharacterOwner->bPressedCocaineJump)
+	{
+		if (TryMantle())
+		{
+			CocaineCharacterOwner->StopJumping();
+		}
+		else
+		{
+			SLOG("Failed Mantle, Reverting to jump")
+			CocaineCharacterOwner->bPressedCocaineJump = false;
+			CharacterOwner->bPressedJump=true;
+			CharacterOwner->CheckJumpInput(DeltaSeconds);
+		}
+	}
+	
+	// Transition Mantle
+	if (Safe_bTransitionFinished)
+	{
+		SLOG("Transition Finished")
+		UE_LOG(LogTemp,Warning,TEXT("Finished RM"));
+		if (IsValid(TransitionQueuedMontage))
+		{
+			SetMovementMode(MOVE_Flying);
+			CharacterOwner->PlayAnimMontage(TransitionQueuedMontage, TransitionQueuedMontageSpeed);
+			TransitionQueuedMontageSpeed=0.f;
+			TransitionQueuedMontage=nullptr;
+		}
+		else
+		{
+			SetMovementMode(MOVE_Walking);
+		}
+		Safe_bTransitionFinished=false;
+	}
+
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
 }
 
-void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+void UCocaineMovementComponent::UpdateCharacterStateAfterMovement(float DeltaSeconds)
 {
-	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
-	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Slide) ExitSlide();
-	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Prone) ExitProne();
+	Super::UpdateCharacterStateAfterMovement(DeltaSeconds);
 	
-	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
-	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
+	if (!HasAnimRootMotion()&&Safe_bHadAnimRootMotion&&IsMovementMode(MOVE_Flying))
+	{
+		UE_LOG(LogTemp,Warning,TEXT("Ending Anim Root Motion"));
+		SetMovementMode(MOVE_Walking);
+	}
+	if (GetRootMotionSourceByID(TransitionRMS_ID)&&GetRootMotionSourceByID(TransitionRMS_ID)->Status.HasFlag(ERootMotionSourceStatusFlags::Finished))
+	{
+		RemoveRootMotionSourceByID(TransitionRMS_ID);
+		Safe_bTransitionFinished=true;
+	}
+	
+	Safe_bHadAnimRootMotion=HasAnimRootMotion();
 }
 
+void UCocaineMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
+{
+	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
+	if (IsMovementMode(MOVE_Flying) && !HasRootMotionSources()) SetMovementMode(MOVE_Walking);
+	Safe_bPrevWantsToCrouch = bWantsToCrouch;
+}
 void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 {
 	Super::PhysCustom(deltaTime, Iterations);
@@ -200,7 +304,19 @@ void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement mode!"));
 	}
 }
+
+// Movement Event
+void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+ {
+ 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
+ 	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Slide) ExitSlide();
+ 	if (PreviousMovementMode==MOVE_Custom && PreviousMovementMode==CMOVE_Prone) ExitProne();
+ 	
+ 	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
+ 	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
+ }
 #pragma endregion
+
 #pragma region Slide
 void UCocaineMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
@@ -441,6 +557,7 @@ bool UCocaineMovementComponent::GetSlideSurface(FHitResult& Hit) const
 	return GetWorld()->LineTraceSingleByProfile(Hit,Start,End,ProfileName,CocaineCharacterOwner->GetIgnoreCharacterParams());
 }
 #pragma endregion
+
 #pragma region Prone
 void UCocaineMovementComponent::Server_EnterProne_Implementation()
 {
@@ -666,7 +783,211 @@ void UCocaineMovementComponent::PhysProne(float DeltaTime, int32 Iterations)
 	}
 }
 #pragma endregion
-#pragma region Input
+
+#pragma region Dash
+
+void UCocaineMovementComponent::OnDashCooldownFinished()
+{
+	Safe_bWantsToDash=true;
+}
+
+bool UCocaineMovementComponent::CanDash() const
+{
+	return IsWalking() && !IsCrouching() /*|| IsFalling()*/; //to uncomment if player could dash in the air (probably should be variable but for now dash can end up as unused code)
+}
+
+void UCocaineMovementComponent::PerformDash()
+{
+	DashStartTime=GetWorld()->GetTimeSeconds();
+	
+	FVector DashDirection = (Acceleration.IsNearlyZero() ? UpdatedComponent->GetForwardVector() : Acceleration).GetSafeNormal2D();
+	DashDirection += FVector::UpVector * .1f;
+	Velocity = DashImpulse * (DashDirection + FVector::UpVector * .1f);
+
+	const FQuat NewRotation = FRotationMatrix::MakeFromXZ(DashDirection,FVector::UpVector).ToQuat();
+	FHitResult Hit;
+	SafeMoveUpdatedComponent(FVector::ZeroVector,NewRotation,false,Hit);
+	
+	SetMovementMode(MOVE_Falling);
+	
+	DashStartDelegate.Broadcast();
+}
+
+void UCocaineMovementComponent::PerformDashRootMotion()
+{
+	DashStartTime=GetWorld()->GetTimeSeconds();
+	
+	//changing mode to flying will not apply gravity to RootMotion animation (Z coordinate)
+	SetMovementMode(bUseGravityInRootMotion ? MOVE_Falling : MOVE_Flying);
+	CharacterOwner->PlayAnimMontage(DashMontage);
+	
+	DashStartDelegate.Broadcast();
+}
+#pragma endregion
+
+#pragma region Mantle
+bool UCocaineMovementComponent::TryMantle()
+{
+	if (!IsMovementMode(MOVE_Walking)&&!IsCrouching()&&!IsMovementMode(MOVE_Falling)) return false;
+
+	// Helper Variables
+	FVector BaseLocation = UpdatedComponent->GetComponentLocation()+FVector::DownVector*CapHH();
+	FVector Fwd= UpdatedComponent->GetForwardVector().GetSafeNormal2D(); // Forward
+	auto Params = CocaineCharacterOwner->GetIgnoreCharacterParams();
+	float MaxHeight = CapHH()*2+MantleReachHeight;
+	float CosMMWSA = FMath::Cos(FMath::DegreesToRadians(MantleMinWallSteepnessAngle)); // Cosine of MantleMinWallSteepnessAngle
+	float CosMMSA = FMath::Cos(FMath::DegreesToRadians(MantleMaxSurfaceAngle)); // Cosine of MantleMaxSurfaceAngle
+	float CosMMAA = FMath::Cos(FMath::DegreesToRadians(MantleMaxAlignmentAngle)); // Cosine of MantleMaxAlignmentAngle
+
+	SLOG("TriedMantle");
+
+	// Check Front Face
+	FHitResult FrontHit;
+	float CheckDistance = FMath::Clamp(Velocity|Fwd,CapR()+30,MantleMaxDistance);
+	FVector FrontStart = BaseLocation+FVector::UpVector*(MaxStepHeight-1);
+	int8 Iterations = 6; // interactions of line trace increasing it should help mantle to perform on thin geometry
+	for (int8 i = 0; i < Iterations; i++)
+	{
+		LINE(FrontStart, FrontStart + Fwd * CheckDistance, FColor::Red);
+		if (GetWorld()->LineTraceSingleByProfile(FrontHit, FrontStart, FrontStart + Fwd * CheckDistance, "BlockAll", Params)) break;
+		FrontStart += FVector::UpVector * (2.f * CapHH() - (MaxStepHeight - 1)) / Iterations-1;
+	}
+	if (!FrontHit.IsValidBlockingHit())return false;
+	float CosWallSteepnessAngle = FrontHit.Normal | FVector::UpVector;
+	if (FMath::Abs(CosWallSteepnessAngle) > CosMMWSA || (Fwd | -FrontHit.Normal) < CosMMAA) return false;
+	POINT(FrontHit.Location,FColor::Red);
+
+	// Check Height
+	TArray<FHitResult> HeightHits;
+	FHitResult SurfaceHit;
+	FVector WallUp = FVector::VectorPlaneProject(FVector::UpVector,FrontHit.Normal).GetSafeNormal(); // vector that gets the tip of the wall helps with angled walls
+	float WallCos = FVector::UpVector | FrontHit.Normal;
+	float WallSin = FMath::Sqrt(1-WallCos*WallCos);
+	FVector TraceStart =FrontHit.Location+Fwd+WallUp*(MaxHeight-(MaxStepHeight-1))/WallSin;
+	LINE(TraceStart, FrontHit.Location + Fwd, FColor::Red);
+	if (!GetWorld()->LineTraceMultiByProfile(HeightHits,TraceStart,FrontHit.Location+Fwd,"BlockAll", Params)) return false;
+	for (const FHitResult& Hit : HeightHits)
+	{
+		if (Hit.IsValidBlockingHit())
+		{
+			SurfaceHit = Hit;
+			break;
+		}
+	}
+	if (!SurfaceHit.IsValidBlockingHit() || (SurfaceHit.Normal|FVector::UpVector)<CosMMSA) return false;
+	float Height = (SurfaceHit.Location-BaseLocation) | FVector::UpVector;
+	SLOG(FString::Printf(TEXT("Height %f"),Height));
+	POINT(SurfaceHit.Location,FColor::Blue);
+
+	if (Height>MaxHeight) return false;
+
+	// Check Clearance
+	float SurfaceCos = FVector::UpVector | SurfaceHit.Normal;
+	float SurfaceSin = FMath::Sqrt(1-SurfaceCos*SurfaceCos);
+	FVector ClearCapLocation = SurfaceHit.Location + Fwd * CapR() + FVector::UpVector*(CapHH() + 1 + CapR() * 2 * SurfaceSin);
+	FCollisionShape CapShape = FCollisionShape::MakeCapsule(CapR(),CapHH());
+	if (GetWorld()->OverlapAnyTestByProfile(ClearCapLocation,FQuat::Identity,"BlockAll",CapShape,Params))
+	{
+		CAPSULE(ClearCapLocation,FColor::Red);
+		return false;
+	}
+	else
+	{
+		CAPSULE(ClearCapLocation,FColor::Green);
+	}
+
+	SLOG("Can Mantle")
+	
+	// Mantle Selection
+	FVector ShortMantleTarget = GetMantleStartLocation(FrontHit,SurfaceHit,false);
+	FVector TallMantleTarget = GetMantleStartLocation(FrontHit,SurfaceHit,true);
+	
+	bool bTallMantle = false;
+	if (IsMovementMode(MOVE_Walking)&& Height > CapHH()*2)
+	{
+		bTallMantle = true;
+	}
+	else if (IsMovementMode(MOVE_Falling)&& (Velocity | FVector::UpVector)<0)
+	{
+		if (!GetWorld()->OverlapAnyTestByProfile(TallMantleTarget,FQuat::Identity,"BlockAll",CapShape,Params))
+			bTallMantle = true;
+	}
+	FVector TransitionTarget = bTallMantle ? TallMantleTarget : ShortMantleTarget;
+	CAPSULE(TransitionTarget,FColor::Yellow);
+	// Perform Transition to Mantle
+	CAPSULE(UpdatedComponent->GetComponentLocation(), FColor::Red)
+
+	float UpSpeed = Velocity | FVector::UpVector;
+	float TransDistance = FVector::Dist(TransitionTarget, UpdatedComponent->GetComponentLocation());
+
+	TransitionQueuedMontageSpeed = FMath::GetMappedRangeValueClamped(FVector2D(-500, 750), FVector2D(.9f, 1.2f), UpSpeed);
+	TransitionRMS.Reset();
+	TransitionRMS = MakeShared<FRootMotionSource_MoveToForce>();
+	TransitionRMS->AccumulateMode = ERootMotionAccumulateMode::Override;
+	
+	TransitionRMS->Duration = FMath::Clamp(TransDistance / 500.f, .1f, .25f);
+	SLOG(FString::Printf(TEXT("Duration: %f"), TransitionRMS->Duration))
+		TransitionRMS->StartLocation = UpdatedComponent->GetComponentLocation();
+	TransitionRMS->TargetLocation = TransitionTarget;
+
+	// Apply Transition Root Motion Source
+	Velocity = FVector::ZeroVector;
+	SetMovementMode(MOVE_Flying);
+	TransitionRMS_ID = ApplyRootMotionSource(TransitionRMS);
+
+	// Animations
+	if (TallMantleMontage&&ShortMantleMontage)
+	{
+		if (bTallMantle)
+		{
+			TransitionQueuedMontage = TallMantleMontage;
+			CharacterOwner->PlayAnimMontage(TransitionTallMantleMontage, 1 / TransitionRMS->Duration);
+			if (IsServer()) Proxy_bTallMantle = !Proxy_bTallMantle;
+		}
+		else
+		{
+			TransitionQueuedMontage = ShortMantleMontage;
+			CharacterOwner->PlayAnimMontage(TransitionShortMantleMontage, 1 / TransitionRMS->Duration);
+			if (IsServer()) Proxy_bShortMantle = !Proxy_bShortMantle;
+		}
+	}
+	return true;
+}
+
+FVector UCocaineMovementComponent::GetMantleStartLocation(const FHitResult& FrontHit, const FHitResult& SurfaceHit, const bool bTallMantle) const
+{
+	const float CosWallSteepnessAngle = FrontHit.Normal | FVector::UpVector;
+	const float DownDistance = bTallMantle ? CapHH()*2.f : MaxStepHeight-1;
+	const FVector EdgeTangent = FVector::CrossProduct(SurfaceHit.Normal,FrontHit.Normal).GetSafeNormal();
+	FVector MantleStart = SurfaceHit.Location;
+	MantleStart += FrontHit.Location.GetSafeNormal2D()*(2.f+CapR());
+	MantleStart += UpdatedComponent->GetForwardVector().GetSafeNormal2D().ProjectOnTo(EdgeTangent)*CapR()*.3f;
+	MantleStart += FVector::UpVector*CapHH();
+	MantleStart += FVector::DownVector*DownDistance;
+	MantleStart += FrontHit.Normal.GetSafeNormal2D()*CosWallSteepnessAngle*DownDistance;
+	return MantleStart;
+}
+#pragma endregion 
+
+#pragma region Helpers
+
+bool UCocaineMovementComponent::IsServer() const
+{
+	return CharacterOwner->HasAuthority();
+}
+
+float UCocaineMovementComponent::CapR() const
+{
+	return CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleRadius();
+}
+
+float UCocaineMovementComponent::CapHH() const
+{
+	return CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+}
+#pragma endregion
+
+#pragma region Interface
 //toggles flag
 void UCocaineMovementComponent::SprintPressed()
 {
@@ -683,10 +1004,27 @@ void UCocaineMovementComponent::CrouchPressed()
 	bWantsToCrouch=!bWantsToCrouch;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle_EnterProne,this,&UCocaineMovementComponent::TryEnterProne,Prone_EnterHoldDuration);
 }
-
 void UCocaineMovementComponent::CrouchReleased()
 {
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_EnterProne);
+}
+
+void UCocaineMovementComponent::DashPressed()
+{
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime-DashStartTime>=DashCooldownDuration)
+	{
+		Safe_bWantsToDash=true;
+	}
+	else
+	{
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_DashCooldown,this,&UCocaineMovementComponent::OnDashCooldownFinished,DashCooldownDuration-(CurrentTime-DashStartTime));
+	}
+}
+void UCocaineMovementComponent::DashReleased()
+{
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_DashCooldown);
+	Safe_bWantsToDash=false;
 }
 
 bool UCocaineMovementComponent::IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const
@@ -698,7 +1036,33 @@ bool UCocaineMovementComponent::IsMovementMode(EMovementMode InMovementMode) con
 	return InMovementMode == MovementMode;
 }
 #pragma endregion
-UCocaineMovementComponent::UCocaineMovementComponent()
+
+#pragma region Replication
+
+void UCocaineMovementComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
-	NavAgentProps.bCanCrouch=true;
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME_CONDITION(UCocaineMovementComponent,Proxy_bDashStart,COND_SkipOwner)
+	
+	DOREPLIFETIME_CONDITION(UCocaineMovementComponent, Proxy_bShortMantle,COND_SkipOwner)
+	DOREPLIFETIME_CONDITION(UCocaineMovementComponent, Proxy_bTallMantle,COND_SkipOwner)
 }
+
+void UCocaineMovementComponent::OnRep_DashStart()
+{
+	if (Proxy_bDashStart)
+	{
+		if (bRootMotionDash) CharacterOwner->PlayAnimMontage(DashMontage);
+		DashStartDelegate.Broadcast();
+	}
+}
+
+void UCocaineMovementComponent::OnRep_ShortMantle()
+{
+}
+
+void UCocaineMovementComponent::OnRep_TallMantle()
+{
+}
+#pragma endregion

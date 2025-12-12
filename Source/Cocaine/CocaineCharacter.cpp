@@ -15,6 +15,8 @@ ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer
 : Super(ObjectInitializer.SetDefaultSubobjectClass<UCocaineMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	CocaineMovementComponent=Cast<UCocaineMovementComponent>(GetCharacterMovement());
+	CocaineMovementComponent->SetIsReplicated(true);
+	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	
@@ -45,6 +47,19 @@ ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer
 	// Configure character movement
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
+}
+
+void ACocaineCharacter::Jump()
+{
+	Super::Jump();
+	bPressedCocaineJump=true;
+	bPressedJump=false;
+}
+
+void ACocaineCharacter::StopJumping()
+{
+	Super::StopJumping();
+	bPressedCocaineJump=false;
 }
 
 void ACocaineCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

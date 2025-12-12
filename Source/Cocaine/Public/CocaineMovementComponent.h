@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "CocaineMovementComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDashStartDelegate);
 /**
  * 
  */
@@ -29,16 +30,20 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 		enum CompressedFlags
 		{
 			FLAG_Sprint		= 0x10,
-			FLAG_Custom_1	= 0x20,
+			FLAG_Dash		= 0x20,
 			FLAG_Custom_2	= 0x40,
 			FLAG_Custom_3	= 0x80,
 		};
-		//Flags
+		// Flags
 		uint8 Saved_bWantsToSprint:1;
+		uint8 Saved_bWantsToDash:1;
+		uint8 Saved_bPressedCocaineJump:1;
 		
-		//Other Variables
+		// Other Variables
 		uint8 Saved_bPrevWantsToCrouch:1;
-		uint8 Save_bWantsToProne:1;
+		uint8 Saved_bWantsToProne:1;
+		uint8 Saved_bHadAnimRootMotion:1;
+		uint8 Saved_bTransitionFinished:1;
 		
 
 		FSavedMove_Cocaine();
@@ -57,10 +62,12 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 		typedef FNetworkPredictionData_Client_Character Super;
 		virtual FSavedMovePtr AllocateNewMove() override;
 	};
-	//Parameters
+#pragma region Prarameters
 	UPROPERTY(EditDefaultsOnly) float MaxSprintSpeed=750.f;
+	UPROPERTY(EditDefaultsOnly) bool bUseGravityInRootMotion=true;
+	UPROPERTY(EditDefaultsOnly) bool bRootMotionDash=false;
 	
-	//slide
+	// slide
 	UPROPERTY(EditDefaultsOnly) float MinSlideSpeed=400.f;
 	UPROPERTY(EditDefaultsOnly) float MaxSlideSpeed=400.f;
 	UPROPERTY(EditDefaultsOnly) float SlideEnterImpulse=400.f;
@@ -68,22 +75,66 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly) float SlideFrictionFactor=.06f;
 	UPROPERTY(EditDefaultsOnly) float BrakingDecelerationSliding=1000.f;
 	
-	//prone
-	UPROPERTY(EditDefaultsOnly)float Prone_EnterHoldDuration=2.f;
-	UPROPERTY(EditDefaultsOnly)float ProneSlideEnterImpulse=300.f;
-	UPROPERTY(EditDefaultsOnly)float ProneMaxSpeed=300.f;
+	// prone
+	UPROPERTY(EditDefaultsOnly) float Prone_EnterHoldDuration=2.f;
+	UPROPERTY(EditDefaultsOnly) float ProneSlideEnterImpulse=300.f;
+	UPROPERTY(EditDefaultsOnly) float ProneMaxSpeed=300.f;
 	UPROPERTY(EditDefaultsOnly) float BrakingDecelerationProning=2500.f;
 	
-	//Transient
+	// Dash
+	UPROPERTY(EditDefaultsOnly) float DashImpulse=1000.f;
+	UPROPERTY(EditDefaultsOnly) float DashCooldownDuration=1.f;
+	UPROPERTY(EditDefaultsOnly) float AuthDashCooldownDuration=.9f;
+	//Dash RootMotion
+	UPROPERTY(EditDefaultsOnly) UAnimMontage* DashMontage;
+	
+	// Mantle
+	UPROPERTY(EditDefaultsOnly) float MantleMaxDistance = 200;
+	UPROPERTY(EditDefaultsOnly) float MantleReachHeight = 50;
+	UPROPERTY(EditDefaultsOnly) float MinMantleDepth= 30;
+	UPROPERTY(EditDefaultsOnly) float MantleMinWallSteepnessAngle = 75;
+	UPROPERTY(EditDefaultsOnly) float MantleMaxSurfaceAngle=40;
+	UPROPERTY(EditDefaultsOnly) float MantleMaxAlignmentAngle=45;
+	UPROPERTY(EditDefaultsOnly) UAnimMontage* TallMantleMontage;
+	UPROPERTY(EditDefaultsOnly) UAnimMontage* TransitionTallMantleMontage;
+	UPROPERTY(EditDefaultsOnly) UAnimMontage* ProxyTallMantleMontage;
+	UPROPERTY(EditDefaultsOnly) UAnimMontage* ShortMantleMontage;
+	UPROPERTY(EditDefaultsOnly) UAnimMontage* TransitionShortMantleMontage;
+	UPROPERTY(EditDefaultsOnly) UAnimMontage* ProxyShortMantleMontage;
+#pragma endregion 
+#pragma region Transient
 	UPROPERTY(Transient) ACocaineCharacter* CocaineCharacterOwner;
+	
+	// Flags
 	bool Safe_bWantsToSprint;
-	bool Safe_bPrevWantsToCrouch;
 	bool Safe_bWantsToProne;
+	bool Safe_bWantsToDash;
+	
+	bool Safe_bHadAnimRootMotion;
+	bool Safe_bPrevWantsToCrouch;
+	float DashStartTime;
 	FTimerHandle TimerHandle_EnterProne;
+	FTimerHandle TimerHandle_DashCooldown;
+	
+	bool Safe_bTransitionFinished;
+	TSharedPtr<FRootMotionSource_MoveToForce> TransitionRMS;
+	UPROPERTY(Transient) UAnimMontage*TransitionQueuedMontage;
+	float TransitionQueuedMontageSpeed;
+	int TransitionRMS_ID;
+#pragma endregion
+
+	// Replication
+	UPROPERTY(ReplicatedUsing=OnRep_DashStart) bool Proxy_bDashStart;
+	UPROPERTY(ReplicatedUsing=OnRep_ShortMantle) bool Proxy_bShortMantle;
+	UPROPERTY(ReplicatedUsing=OnRep_TallMantle) bool Proxy_bTallMantle;
+
+	// Delegates
+public:
+	UPROPERTY(BlueprintAssignable) FDashStartDelegate DashStartDelegate;
 	
 public:
 	UCocaineMovementComponent();
-	//Character Movement Component
+	// Character Movement Component
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 	virtual bool IsMovingOnGround() const override;
     virtual bool CanCrouchInCurrentState() const override;
@@ -91,38 +142,73 @@ public:
 	virtual float GetMaxBrakingDeceleration() const override;
 protected:
 	virtual void InitializeComponent() override;
-
 	virtual void UpdateFromCompressedFlags(uint8 InFlags) override;
-	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
-	
-	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
-	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 
+public:	
+	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
+	virtual void UpdateCharacterStateAfterMovement(float DeltaSeconds) override;
+
+protected:
+	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
+	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 	
+	// slide	
 private:
-	//slide
 	void EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode);
 	void ExitSlide();
 	bool CanSlide() const;
 	void PhysSlide(float DeltaTime, int32 Iterations);
 	bool GetSlideSurface(FHitResult& Hit) const;
-	//Prone
+	
+	// Prone
+private:
 	void TryEnterProne(){Safe_bWantsToSprint = true;}
 	UFUNCTION(Server, Reliable) void Server_EnterProne();
 	void EnterProne(EMovementMode PrevMode,ECustomMovementMode PrevCustomMode);
 	void ExitProne();
 	bool CanProne() const;
 	void PhysProne(float DeltaTime,int32 Iterations);
+	
+	// Dash
+private:
+	void OnDashCooldownFinished();
+	bool CanDash() const;
+	void PerformDash();
+	void PerformDashRootMotion();
+	
+	//Mantle
+private:
+	bool TryMantle();
+	FVector GetMantleStartLocation(const FHitResult& FrontHit, const FHitResult& SurfaceHit, bool bTallMantle) const;
+	
+	//Helpers
+private:
+	bool IsServer() const;
+	float CapR() const; // Get Capsule radius
+	float CapHH() const; // Get Capsule half height
+
+	// Interface
 public:
-	//Interface
 	UFUNCTION(BlueprintCallable) void SprintPressed();
 	UFUNCTION(BlueprintCallable) void SprintReleased();
 
 	UFUNCTION(BlueprintCallable) void CrouchPressed();
 	UFUNCTION(BlueprintCallable) void CrouchReleased();
 	
+	UFUNCTION(BlueprintCallable) void DashPressed();
+	UFUNCTION(BlueprintCallable) void DashReleased();
+	
 	UFUNCTION(BlueprintCallable) bool IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const;
 	UFUNCTION(BlueprintCallable) bool IsMovementMode(EMovementMode InMovementMode) const;
+	
+	// Proxy Replication
+public:
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+private:
+	UFUNCTION() void OnRep_DashStart();
+	UFUNCTION() void OnRep_ShortMantle();
+	UFUNCTION() void OnRep_TallMantle();
+	
 	
 };
