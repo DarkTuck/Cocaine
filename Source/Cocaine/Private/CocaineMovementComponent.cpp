@@ -179,7 +179,7 @@ void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMove
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
 	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Slide) ExitSlide();
-	if (PreviousMovementMode==MOVE_Custom && PreviousMovementMode==CMOVE_Prone) ExitProne();
+	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Prone) ExitProne();
 	
 	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
 	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
@@ -465,7 +465,7 @@ void UCocaineMovementComponent::ExitProne()
 
 bool UCocaineMovementComponent::CanProne() const
 {
-	return IsCustomMovementMode(CMOVE_Slide)||IsMovementMode(MOVE_Walking)&&IsCrouching();
+	return IsCustomMovementMode(CMOVE_Slide)||(IsMovementMode(MOVE_Walking)&&IsCrouching());
 }
 
 //a lot of this function is borrowed from UCharacterMovementComponent::PhysWalking
