@@ -17,6 +17,7 @@ enum ECustomMovementMode
 	CMOVE_None	UMETA(Hidden),
 	CMOVE_Slide	UMETA(DisplayName="Slide"),
 	CMOVE_Prone UMETA(DisplayName="Prone"),
+	CMOVE_Mantle UMETA(DisplayName="Mantle"),
 	CMOVE_MAX 	UMETA(Hidden),
 };
 UCLASS()
@@ -95,12 +96,14 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly) float MantleMinWallSteepnessAngle = 75;
 	UPROPERTY(EditDefaultsOnly) float MantleMaxSurfaceAngle=40;
 	UPROPERTY(EditDefaultsOnly) float MantleMaxAlignmentAngle=45;
+	UPROPERTY(EditDefaultsOnly) float MantleMaxSpeed=10000;
 	UPROPERTY(EditDefaultsOnly) UAnimMontage* TallMantleMontage;
 	UPROPERTY(EditDefaultsOnly) UAnimMontage* TransitionTallMantleMontage;
 	UPROPERTY(EditDefaultsOnly) UAnimMontage* ProxyTallMantleMontage;
 	UPROPERTY(EditDefaultsOnly) UAnimMontage* ShortMantleMontage;
 	UPROPERTY(EditDefaultsOnly) UAnimMontage* TransitionShortMantleMontage;
 	UPROPERTY(EditDefaultsOnly) UAnimMontage* ProxyShortMantleMontage;
+	UPROPERTY() FVector MantleTarget;
 #pragma endregion 
 #pragma region Transient
 	UPROPERTY(Transient) ACocaineCharacter* CocaineCharacterOwner;
@@ -180,6 +183,9 @@ private:
 	//Mantle
 private:
 	bool TryMantle();
+	void EnterMantle(EMovementMode PrevMode,ECustomMovementMode PrevCustomMode);
+	void ExitMantle();
+	void PhysMantle(float DeltaTime,int32 Iterations);
 	FVector GetMantleStartLocation(const FHitResult& FrontHit, const FHitResult& SurfaceHit, bool bTallMantle) const;
 	
 	//Helpers

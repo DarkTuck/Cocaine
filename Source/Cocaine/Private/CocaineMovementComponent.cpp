@@ -109,7 +109,7 @@ FSavedMovePtr UCocaineMovementComponent::FNetworkPredictionData_Client_Cocaine::
 #pragma endregion
 
 #pragma region CMC
-UCocaineMovementComponent::UCocaineMovementComponent()
+UCocaineMovementComponent::UCocaineMovementComponent() 
 {
 	NavAgentProps.bCanCrouch=true;
 }
@@ -160,8 +160,10 @@ float UCocaineMovementComponent::GetMaxSpeed() const
 		return MaxSlideSpeed;
 	case CMOVE_Prone:
 		return ProneMaxSpeed;
+	case CMOVE_Mantle:
+		return MaxSprintSpeed;
 	default:
-		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement Mode"));
+;		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement Mode"));
 		return -1.f;
 	}
 }
@@ -233,6 +235,7 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 		if (TryMantle())
 		{
 			CocaineCharacterOwner->StopJumping();
+			SetMovementMode(MOVE_Custom,CMOVE_Mantle);
 		}
 		else
 		{
@@ -299,6 +302,9 @@ void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 		break;
 	case CMOVE_Prone:
 		PhysProne(deltaTime, Iterations);
+		break;
+	case CMOVE_Mantle:
+		PhysMantle(deltaTime, Iterations);
 		break;
 	default:
 		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement mode!"));
@@ -898,6 +904,7 @@ bool UCocaineMovementComponent::TryMantle()
 
 	SLOG("Can Mantle")
 	
+	/*
 	// Mantle Selection
 	FVector ShortMantleTarget = GetMantleStartLocation(FrontHit,SurfaceHit,false);
 	FVector TallMantleTarget = GetMantleStartLocation(FrontHit,SurfaceHit,true);
@@ -951,7 +958,90 @@ bool UCocaineMovementComponent::TryMantle()
 			if (IsServer()) Proxy_bShortMantle = !Proxy_bShortMantle;
 		}
 	}
+	*/
+	MantleTarget = ClearCapLocation;
 	return true;
+}
+
+void UCocaineMovementComponent::EnterMantle(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
+{
+}
+
+void UCocaineMovementComponent::ExitMantle()
+{
+	MantleTarget = FVector::ZeroVector;
+	
+}
+
+void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
+{
+	SLOG("PhysMantle")
+	if (DeltaTime < MIN_TICK_TIME)
+	{
+		return;
+	}
+	
+	bJustTeleported = false;
+	bool bCheckedFall = false;
+	bool bTriedLedgeMove = false;
+	float remainingTime = DeltaTime;
+	
+		// Perform the move
+	while ( (remainingTime >= MIN_TICK_TIME) && (Iterations < MaxSimulationIterations) && CharacterOwner && (CharacterOwner->Controller || bRunPhysicsWithNoController || (CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy)) )
+	{
+		Iterations++;
+		bJustTeleported = false;
+		const float timeTick = GetSimulationTimeStep(remainingTime, Iterations);
+		remainingTime -= timeTick;
+		const FVector OldLocation = UpdatedComponent->GetComponentLocation();
+		FVector ToTarget = MantleTarget - OldLocation;
+		const float Distance = ToTarget.Size();
+	
+		if (Distance < 10.f)
+		{
+			Velocity = FVector::ZeroVector;
+			SetMovementMode(MOVE_Walking);
+			StartNewPhysics(DeltaTime, Iterations);
+			return;
+		}
+		ToTarget.Normalize();
+		const float MaxSpeed = MantleMaxSpeed;
+		const FVector DesiredVelocity = ToTarget * MaxSpeed;
+
+		Velocity = FMath::VInterpTo(Velocity, DesiredVelocity, timeTick, 8.f);
+ 
+		FVector Delta = Velocity * timeTick;
+		if (Delta.IsNearlyZero())
+		{
+			remainingTime = 0.f;
+			break;
+		}
+ 
+		FHitResult Hit;
+		SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, Hit);
+ 
+		if (Hit.IsValidBlockingHit())
+		{
+			SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit,false);
+		}
+ 
+		const FVector NewLocation = UpdatedComponent->GetComponentLocation();
+		Velocity = (NewLocation - OldLocation) / timeTick;
+ 
+		if (NewLocation.Equals(OldLocation, 0.001f))
+		{
+			remainingTime = 0.f;
+			break; 
+		}
+ 
+		if (FVector::Dist(NewLocation, MantleTarget) < 10.f)
+		{
+			Velocity = FVector::ZeroVector;
+			SetMovementMode(MOVE_Walking);
+			remainingTime = 0.f;
+			break;
+		}
+	}
 }
 
 FVector UCocaineMovementComponent::GetMantleStartLocation(const FHitResult& FrontHit, const FHitResult& SurfaceHit, const bool bTallMantle) const
@@ -1060,9 +1150,17 @@ void UCocaineMovementComponent::OnRep_DashStart()
 
 void UCocaineMovementComponent::OnRep_ShortMantle()
 {
+	if (ProxyShortMantleMontage)
+	{
+		CharacterOwner->PlayAnimMontage(ProxyShortMantleMontage);
+	}
 }
 
 void UCocaineMovementComponent::OnRep_TallMantle()
 {
+	if (ProxyTallMantleMontage)
+	{
+		CharacterOwner->PlayAnimMontage(ProxyTallMantleMontage);
+	}
 }
 #pragma endregion
