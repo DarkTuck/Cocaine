@@ -51,6 +51,12 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	class UInputAction* MouseLookAction;
+	
+	UPROPERTY(EditAnywhere, Category ="Input")
+	UInputAction* InteractAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category ="Grappling")
+	class UCableComponent* GrappleCable;
 public:
 	bool bPressedCocaineJump;
 public:
@@ -87,6 +93,7 @@ protected:
 
 	/** Set up input action bindings */
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
+	virtual void Tick(float DeltaSeconds) override;
 	
 
 public:
@@ -100,5 +107,12 @@ public:
 	FORCEINLINE UCocaineMovementComponent* GetCocaineCharacterMovement() const {return CocaineMovementComponent;}
 
 	FCollisionQueryParams GetIgnoreCharacterParams() const;
+private:
+	void Interact();
+	void StopInteract();
+	
+	float maxLineDistance {1000.f};
+	bool bIsGrappling{false};
+	FVector GrapplingPoint;
 };
 

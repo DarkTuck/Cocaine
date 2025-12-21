@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Cocaine.h"
 #include "Public/CocaineMovementComponent.h"
+#include "CableComponent.h"
 
 ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer.SetDefaultSubobjectClass<UCocaineMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -47,6 +48,10 @@ ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer
 	// Configure character movement
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
+	
+	GrappleCable=CreateDefaultSubobject<UCableComponent>(TEXT("GrappleCable"));
+	GrappleCable->SetupAttachment(FirstPersonCameraComponent);
+	GrappleCable->SetVisibility(false);
 }
 
 void ACocaineCharacter::Jump()
@@ -77,10 +82,25 @@ void ACocaineCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		// Looking/Aiming
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ACocaineCharacter::LookInput);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ACocaineCharacter::LookInput);
+		
+		// Interact
+		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Triggered,this,&ACocaineCharacter::Interact);
+		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Completed,this,&ACocaineCharacter::StopInteract);
 	}
 	else
 	{
 		UE_LOG(LogCocaine, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+	}
+}
+
+void ACocaineCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if (bIsGrappling)
+	{
+		GrappleCable->EndLocation=GetActorTransform().InverseTransformPosition(GrapplingPoint);
+		
+		GetCharacterMovement()->AddForce((GrapplingPoint-GetActorLocation()).GetSafeNormal()*1000000.f);
 	}
 }
 
@@ -94,6 +114,32 @@ FCollisionQueryParams ACocaineCharacter::GetIgnoreCharacterParams() const
 	Params.AddIgnoredActor(this);
 
 	return Params;
+}
+
+void ACocaineCharacter::Interact()
+{
+	const FVector Start{GetCapsuleComponent()->GetComponentLocation()};
+	const FVector End{Start+(maxLineDistance*FirstPersonCameraComponent->GetForwardVector())};
+	DrawDebugLine(GetWorld(),Start,End,FColor::Emerald);
+	
+	FHitResult Hit;
+	if (const bool bHasHit {GetWorld()->SweepSingleByChannel(Hit,Start,End,FQuat::Identity,ECC_GameTraceChannel2,FCollisionShape::MakeSphere(100.f))})
+	{
+		bIsGrappling=true;
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		GrappleCable->SetVisibility(true);
+		GrapplingPoint=Hit.ImpactPoint;
+	}
+}
+
+void ACocaineCharacter::StopInteract()
+{
+	bIsGrappling=false;
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+	}
+	GrappleCable->SetVisibility(false);
 }
 
 

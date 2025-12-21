@@ -972,6 +972,7 @@ void UCocaineMovementComponent::ExitMantle()
 	MantleTarget = FVector::ZeroVector;
 	
 }
+//unfortunately, Mantle is not network safe, but it's unnecessary in this game. Might fix it later (maybe)
 
 void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 {
