@@ -69,7 +69,13 @@ USplineComponent* UGeometryHelpers::CreateOffsettedSpline(USplineComponent* Dest
 		AddPoint(LoopCut);
 		AddPoint(CurveStart);
 	}
-
+		
+	for (int32 i{1}; i !=Count-1 ; ++i)
+	{
+		FSplinePoint Point = ExtractPointAtIndex(Source, i);
+		Point.Position += Offset;
+		AddPoint(Point);
+	}
 	{
 		FSplinePoint Floor = ExtractPointAtIndex(Source, Count-1);
 		Floor.Rotation = (-Offset).Rotation() + Floor.LeaveTangent.Rotation();
@@ -80,22 +86,16 @@ USplineComponent* UGeometryHelpers::CreateOffsettedSpline(USplineComponent* Dest
 		const float LoopCutMagnitude {OffsetMagnitude - CornerRadius};
 		const FVector LoopCutOffset {Offset * (LoopCutMagnitude/OffsetMagnitude)};
 		LoopCut.Position += LoopCutOffset;
-		LoopCut.LeaveTangent*=(2.f*CornerRadius)/LoopCut.LeaveTangent.Length();
+		LoopCut.LeaveTangent*=(2.f*CornerRadius)/LoopCut.ArriveTangent.Length();
 		
 		FSplinePoint CurveEnd{ExtractPointAtDistanceAlongSpline(Source, Source->GetDistanceAlongSplineAtSplinePoint(Count-1)-CornerRadius)};
 		CurveEnd.Position += Offset;
-		CurveEnd.ArriveTangent*=(2.f*CornerRadius)/CurveEnd.ArriveTangent.Length();
+		CurveEnd.LeaveTangent*=(2.f*CornerRadius)/CurveEnd.LeaveTangent.Length();
 		
 		AddPoint(CurveEnd);
 		AddPoint(LoopCut);
 		AddPoint(Floor);
 	}
 	
-	for (int32 i{1}; i !=Count ; ++i)
-	{
-		FSplinePoint Point = ExtractPointAtIndex(Source, i);
-		Point.Position += Offset;
-		AddPoint(Point);
-	}
 	return Dest;
 }
