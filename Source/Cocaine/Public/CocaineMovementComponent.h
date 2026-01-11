@@ -104,6 +104,9 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly) UAnimMontage* TransitionShortMantleMontage;
 	UPROPERTY(EditDefaultsOnly) UAnimMontage* ProxyShortMantleMontage;
 	UPROPERTY() FVector MantleTarget;
+	
+	// Grind
+	UPROPERTY(EditAnywhere) float GrindDetectionRadius = 50;
 #pragma endregion 
 #pragma region Transient
 	UPROPERTY(Transient) ACocaineCharacter* CocaineCharacterOwner;
@@ -180,13 +183,17 @@ private:
 	void PerformDash();
 	void PerformDashRootMotion();
 	
-	//Mantle
+	// Mantle
 private:
 	bool TryMantle();
 	void EnterMantle(EMovementMode PrevMode,ECustomMovementMode PrevCustomMode);
 	void ExitMantle();
 	void PhysMantle(float DeltaTime,int32 Iterations);
 	FVector GetMantleStartLocation(const FHitResult& FrontHit, const FHitResult& SurfaceHit, bool bTallMantle) const;
+	
+	// Grinding
+private:
+	bool TryGrind();
 	
 	//Helpers
 private:

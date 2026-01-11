@@ -19,7 +19,10 @@ public class Cocaine : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
-			"CableComponent"
+			"CableComponent",
+			"GeometryFramework",
+			"GeometryScriptingCore",
+			"DynamicMesh"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

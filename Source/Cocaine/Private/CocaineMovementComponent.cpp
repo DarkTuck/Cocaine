@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 #include "DrawDebugHelpers.h"
+#include "GrindingRail.h"
 
 // Helper Macros
 #if 1
@@ -14,11 +15,13 @@ float MacroDuration = 2.f;
 #define POINT(x,c) DrawDebugPoint(GetWorld(),x,10,c,!MacroDuration,MacroDuration); // draw debug point macro
 #define LINE(x1,x2,c) DrawDebugLine(GetWorld(),x1,x2,c,!MacroDuration,MacroDuration); // draw debug line macro
 #define CAPSULE(x,c) DrawDebugCapsule(GetWorld(),x,CapHH(),CapR(),FQuat::Identity,c,!MacroDuration,MacroDuration); // draw debug capsule macro
+#define SPHERE(c,r,color) DrawDebugSphere(GetWorld(),c,r,32,color,false,MacroDuration); // draw debug sphere macro
 #else
 #define SLOG(x)
 #define POINT(x,c)
 #define LINE(x,c)
 #define CAPSULE(x,c)
+#define SPHERE(c,r,color)
 #endif
 
 #pragma region Saved Move
@@ -196,7 +199,7 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	if (IsCustomMovementMode(CMOVE_Slide)&&!bWantsToCrouch)
 	{
 		SetMovementMode(MOVE_Walking);
-	}// Exit
+	}
 	
 	// Prone
 	if (Safe_bWantsToProne)
@@ -211,7 +214,7 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	if (IsCustomMovementMode(CMOVE_Prone)&&!bWantsToCrouch)
 	{
 		SetMovementMode(MOVE_Walking);
-	}// Exit
+	}
 
 	// Dash
 	const bool bAuthProxy = CharacterOwner->HasAuthority() && !CharacterOwner->IsLocallyControlled();
@@ -245,7 +248,7 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 			CharacterOwner->CheckJumpInput(DeltaSeconds);
 		}
 	}
-	
+		
 	// Transition Mantle
 	if (Safe_bTransitionFinished)
 	{
@@ -263,6 +266,12 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 			SetMovementMode(MOVE_Walking);
 		}
 		Safe_bTransitionFinished=false;
+	}
+	
+	// Grinding
+	if (TryGrind())
+	{
+		// TODO
 	}
 
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
@@ -1057,6 +1066,36 @@ FVector UCocaineMovementComponent::GetMantleStartLocation(const FHitResult& Fron
 	MantleStart += FVector::DownVector*DownDistance;
 	MantleStart += FrontHit.Normal.GetSafeNormal2D()*CosWallSteepnessAngle*DownDistance;
 	return MantleStart;
+}
+#pragma endregion
+
+#pragma region Grind
+
+bool UCocaineMovementComponent::TryGrind()
+{
+	if (!IsMovementMode(MOVE_Falling) || Velocity.Z>=0.0) return false;
+	
+	FHitResult Hit{};
+	const FVector TraceStart {GetActorFeetLocation()};
+	const FVector TraceEnd {TraceStart + FVector::DownVector};
+	constexpr ECollisionChannel GrindCollisionChannel = ECC_GameTraceChannel3;
+	GetWorld()->SweepSingleByChannel(Hit, TraceStart, TraceEnd, FQuat::Identity,GrindCollisionChannel,FCollisionShape::MakeSphere(GrindDetectionRadius));
+	SPHERE(TraceStart,GrindDetectionRadius,FColor::Red);
+	if (!Hit.bBlockingHit) return false;
+	SLOG("Grind Hit")
+
+	const AGrindingRail* GrindingRail = CastChecked<AGrindingRail>(Hit.GetActor());
+	const FVector CharacterLocation = GetActorLocation();
+	const USplineComponent* GrindSpline = GrindingRail->GetGrindRail();
+	FTransform GrindSplineTransform = GrindSpline->FindTransformClosestToWorldLocation(CharacterLocation,ESplineCoordinateSpace::World);
+	const FVector CharacterHeightOffset = GrindSplineTransform.GetUnitAxis(EAxis::Z)*CapHH();
+	GrindSplineTransform.AddToTranslation(CharacterHeightOffset);
+	
+	if (FVector::Dist(GrindSplineTransform.GetLocation(),CharacterLocation) > GrindDetectionRadius) return false;
+	
+	SPHERE(GrindSplineTransform.GetLocation(),GrindDetectionRadius,FColor::Green);
+	
+	return true;
 }
 #pragma endregion 
 
