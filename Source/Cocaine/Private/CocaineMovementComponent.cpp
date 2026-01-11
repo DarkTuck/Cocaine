@@ -1078,7 +1078,7 @@ bool UCocaineMovementComponent::TryGrind()
 	FHitResult Hit{};
 	const FVector TraceStart {GetActorFeetLocation()};
 	const FVector TraceEnd {TraceStart + FVector::DownVector};
-	constexpr ECollisionChannel GrindCollisionChannel = ECC_GameTraceChannel3;
+	constexpr ECollisionChannel GrindCollisionChannel {ECC_GameTraceChannel3};
 	GetWorld()->SweepSingleByChannel(Hit, TraceStart, TraceEnd, FQuat::Identity,GrindCollisionChannel,FCollisionShape::MakeSphere(GrindDetectionRadius));
 	SPHERE(TraceStart,GrindDetectionRadius,FColor::Red);
 	if (!Hit.bBlockingHit) return false;
@@ -1087,6 +1087,8 @@ bool UCocaineMovementComponent::TryGrind()
 	const AGrindingRail* GrindingRail = CastChecked<AGrindingRail>(Hit.GetActor());
 	const FVector CharacterLocation = GetActorLocation();
 	const USplineComponent* GrindSpline = GrindingRail->GetGrindRail();
+	const FVector CharacterForward = UpdatedComponent->GetForwardVector();
+	
 	FTransform GrindSplineTransform = GrindSpline->FindTransformClosestToWorldLocation(CharacterLocation,ESplineCoordinateSpace::World);
 	const FVector CharacterHeightOffset = GrindSplineTransform.GetUnitAxis(EAxis::Z)*CapHH();
 	GrindSplineTransform.AddToTranslation(CharacterHeightOffset);
@@ -1094,6 +1096,12 @@ bool UCocaineMovementComponent::TryGrind()
 	if (FVector::Dist(GrindSplineTransform.GetLocation(),CharacterLocation) > GrindDetectionRadius) return false;
 	
 	SPHERE(GrindSplineTransform.GetLocation(),GrindDetectionRadius,FColor::Green);
+	
+	for (float Distance = 0.0f; Distance<=GrindSpline->GetSplineLength();Distance+=30.f)
+	{
+		const FVector SphereLocation = GrindSpline->GetLocationAtDistanceAlongSpline(Distance,ESplineCoordinateSpace::World);
+		SPHERE(SphereLocation,GrindDetectionRadius,FColor::Cyan);
+	}
 	
 	return true;
 }

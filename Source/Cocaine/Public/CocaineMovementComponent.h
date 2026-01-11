@@ -195,6 +195,10 @@ private:
 private:
 	bool TryGrind();
 	
+	// Flying
+public:
+	FORCEINLINE void SetFlying(const bool Set) {SetMovementMode(Set?MOVE_Flying:MOVE_Walking);}
+	
 	//Helpers
 private:
 	bool IsServer() const;

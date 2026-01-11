@@ -126,7 +126,7 @@ void ACocaineCharacter::Interact()
 	if (const bool bHasHit {GetWorld()->SweepSingleByChannel(Hit,Start,End,FQuat::Identity,ECC_GameTraceChannel2,FCollisionShape::MakeSphere(100.f))})
 	{
 		bIsGrappling=true;
-		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		GetCocaineCharacterMovement()->SetFlying(true);
 		GrappleCable->SetVisibility(true);
 		GrapplingPoint=Hit.ImpactPoint;
 	}
@@ -137,7 +137,7 @@ void ACocaineCharacter::StopInteract()
 	bIsGrappling=false;
 	if (!GetCharacterMovement()->IsFalling())
 	{
-		GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+		GetCocaineCharacterMovement()->SetFlying(false);
 	}
 	GrappleCable->SetVisibility(false);
 }
