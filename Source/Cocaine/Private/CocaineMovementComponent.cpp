@@ -128,6 +128,7 @@ void UCocaineMovementComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 	CocaineCharacterOwner=Cast<ACocaineCharacter>(GetOwner());
+	GrindDetectionRadiusSquared = GrindDetectionRadius * GrindDetectionRadius;
 }
 // Network
 void UCocaineMovementComponent::UpdateFromCompressedFlags(uint8 InFlags)
@@ -1126,6 +1127,7 @@ bool UCocaineMovementComponent::TryGrind()
 	const FVector CharacterForward {UpdatedComponent->GetForwardVector()};
 	
 	FTransform GrindSplineTransform {GrindSpline->FindTransformClosestToWorldLocation(CharacterLocation,ESplineCoordinateSpace::World)};
+	const FVector GrindSplineFwd {GrindSplineTransform.GetUnitAxis(EAxis::X)};
 	const FVector CharacterToGrindLocation {GrindSplineTransform.GetLocation()- CharacterLocation};
 	
 	if (FVector::DotProduct(CharacterToGrindLocation,Velocity)<0.0) return false;
@@ -1133,7 +1135,7 @@ bool UCocaineMovementComponent::TryGrind()
 	const FVector CharacterHeightOffset {GrindSplineTransform.GetUnitAxis(EAxis::Z)*CapHH()};
 	GrindSplineTransform.AddToTranslation(CharacterHeightOffset);
 	
-	if (FVector::Dist(GrindSplineTransform.GetLocation(),CharacterLocation) > GrindDetectionRadius) return false;
+	if (FVector::DistSquared(GrindSplineTransform.GetLocation(),CharacterLocation) > GrindDetectionRadiusSquared) return false;
 	
 	SPHERE(GrindSplineTransform.GetLocation(),GrindDetectionRadius,FColor::Green);
 	
@@ -1147,19 +1149,36 @@ bool UCocaineMovementComponent::TryGrind()
 	{
 		GrindState.GrindingRail=GrindingRailHit;
 		GrindState.GrindSplineComponent=GrindSpline;
+		GrindState.bGrindingForward=FVector::DotProduct(CharacterForward,GrindSplineFwd)>0.f;
+		GrindState.DistanceAlongGrind=GrindState.GrindSplineComponent->GetDistanceAlongSplineAtLocation(CharacterLocation, ESplineCoordinateSpace::World);
+		
+		if (GrindState.bGrindingForward)
+		{
+			GrindState.DistanceAlongGrind += GrindSpeed*GrindState.MoveToGrindEntryPointDuration;
+		}
+		else
+		{
+			GrindState.DistanceAlongGrind -= GrindSpeed*GrindState.MoveToGrindEntryPointDuration;
+		}
+		
+		if (GrindState.GrindSplineComponent->IsClosedLoop())
+		{
+			GrindState.DistanceAlongGrind = FMath::Wrap(GrindState.DistanceAlongGrind, 0.0f,GrindState.GrindSplineComponent->GetSplineLength());
+		}
+
 		GrindState.GrindDetectionLocation=CharacterLocation;
 		GrindState.GrindDetectionRotation=CharacterOwner->GetActorQuat();
-		GrindState.GrindEntryLocation=GrindSplineTransform.GetLocation();
-		GrindState.GrindEntryRotation=GrindSplineTransform.GetRotation();
-		GrindState.DistanceAlongGrind=GrindState.GrindSplineComponent->GetDistanceAlongSplineAtLocation(GrindState.GrindEntryLocation, ESplineCoordinateSpace::World);
-		GrindState.MoveToGrindEntryPointTimeElapsed=0.f;
-		GrindState.bGrindingForward=FVector::DotProduct(CharacterForward,GrindState.GrindEntryRotation.GetForwardVector())>0.f;
-		
+		GrindState.GrindEntryRotation=GrindState.GrindSplineComponent->GetQuaternionAtDistanceAlongSpline(GrindState.DistanceAlongGrind,ESplineCoordinateSpace::World);
+				
 		// set GrindEntryRotation to match a grinding direction if were not grinding forward
 		if (!GrindState.bGrindingForward)
 		{
 			GrindState.GrindEntryRotation*=FQuat(FVector::UpVector,UE_PI);
 		}
+		
+		GrindState.GrindEntryLocation=GrindState.GrindSplineComponent->GetLocationAtDistanceAlongSpline(GrindState.DistanceAlongGrind,ESplineCoordinateSpace::World);
+		GrindState.GrindEntryLocation+=GrindState.GrindEntryRotation.GetUpVector()*CapHH();
+		GrindState.MoveToGrindEntryPointTimeElapsed=0.f;
 		
 		CharacterOwner->MoveIgnoreActorAdd(GrindState.GrindingRail.Get());
 		GrindState.bMovingToGrindEntryPoint=true;
@@ -1177,6 +1196,7 @@ void UCocaineMovementComponent::ExitGrind()
 	CharacterOwner->MoveIgnoreActorRemove(GrindState.GrindingRail.Get());
 	GrindState.GrindingRail=nullptr;
 	GrindState.GrindSplineComponent=nullptr;
+	SLOG("Exit Grind")
 }
 
 void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
@@ -1210,8 +1230,8 @@ void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
 			GrindState.DistanceAlongGrind -= GrindSpeed*DeltaTime;
 		}
 		
-		const float SpineLenght {GrindState.GrindSplineComponent->GetSplineLength()};
-		const bool bPassedEndPoint {GrindState.DistanceAlongGrind>=SpineLenght || GrindState.DistanceAlongGrind<=0.f};
+		const float SplineLenght {GrindState.GrindSplineComponent->GetSplineLength()};
+		const bool bPassedEndPoint {GrindState.DistanceAlongGrind>=SplineLenght || GrindState.DistanceAlongGrind<=0.0f};
 		
 		if (bPassedEndPoint && !(GrindState.GrindSplineComponent->IsClosedLoop()))
 		{
@@ -1223,7 +1243,7 @@ void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
 		{
 			if (GrindState.GrindSplineComponent->IsClosedLoop())
 			{
-				GrindState.DistanceAlongGrind = FMath::Wrap(GrindState.DistanceAlongGrind,0.f,SpineLenght);
+				GrindState.DistanceAlongGrind = FMath::Wrap(GrindState.DistanceAlongGrind,0.f,SplineLenght);
 			}
 			
 			NewRotation = GrindState.GrindSplineComponent->GetQuaternionAtDistanceAlongSpline(GrindState.DistanceAlongGrind, ESplineCoordinateSpace::World);
@@ -1243,7 +1263,6 @@ void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
 	SafeMoveUpdatedComponent(NewLocation-LastLocation,NewRotation,true,Hit);
 	
 	Velocity = (UpdatedComponent->GetComponentLocation()-LastLocation)/DeltaTime;
-	if (Hit.bBlockingHit) SetMovementMode(MOVE_Walking);
 	if (!bShouldContinueGrinding) SetMovementMode(MOVE_Falling);
 	SLOG(TEXT("Distance Along Spline: ") + FString::SanitizeFloat(GrindState.DistanceAlongGrind) + TEXT(""))
 }

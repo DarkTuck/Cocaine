@@ -130,6 +130,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	
 	// Grind
 	UPROPERTY(EditAnywhere) float GrindDetectionRadius = 50;
+	float GrindDetectionRadiusSquared;
 	UPROPERTY(EditAnywhere) float GrindSpeed = 100;
 	UPROPERTY() FGrindState GrindState{};
 #pragma endregion 
