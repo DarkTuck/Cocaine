@@ -197,20 +197,20 @@ float UCocaineMovementComponent::GetMaxBrakingDeceleration() const
 void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
 	// Slide
-	if (MovementMode==MOVE_Walking&&!bWantsToCrouch&&Safe_bPrevWantsToCrouch)
+	if (MovementMode==MOVE_Walking&&!bWantsToCrouch&&Safe_bPrevWantsToCrouch) // Enter
 	{
 		if (CanSlide())
 		{
 			SetMovementMode(MOVE_Custom, CMOVE_Slide);
 		}
-	}// Enter
-	if (IsCustomMovementMode(CMOVE_Slide)&&!bWantsToCrouch)
+	}
+	if (IsCustomMovementMode(CMOVE_Slide)&&!bWantsToCrouch) // Exit
 	{
 		SetMovementMode(MOVE_Walking);
 	}
 	
 	// Prone
-	if (Safe_bWantsToProne)
+	if (Safe_bWantsToProne) // Enter
 	{
 		if (CanProne())
 		{
@@ -218,8 +218,8 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 			if (!CharacterOwner->HasAuthority()) Server_EnterProne();
 		}
 		Safe_bWantsToProne=false;
-	}// Enter
-	if (IsCustomMovementMode(CMOVE_Prone)&&!bWantsToCrouch)
+	}
+	if (IsCustomMovementMode(CMOVE_Prone)&&!bWantsToCrouch) // Exit
 	{
 		SetMovementMode(MOVE_Walking);
 	}
@@ -279,7 +279,7 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	// Grinding
 	if (TryGrind())
 	{
-		// TODO
+		SetMovementMode(MOVE_Custom,CMOVE_Grind);
 	}
 
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
@@ -323,6 +323,9 @@ void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 	case CMOVE_Mantle:
 		PhysMantle(deltaTime, Iterations);
 		break;
+	case CMOVE_Grind:
+		PhysGrind(deltaTime, Iterations);
+		break;
 	default:
 		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement mode!"));
 	}
@@ -334,9 +337,13 @@ void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMove
  	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
  	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Slide) ExitSlide();
  	if (PreviousMovementMode==MOVE_Custom && PreviousMovementMode==CMOVE_Prone) ExitProne();
+	if (PreviousMovementMode==MOVE_Custom && PreviousMovementMode==CMOVE_Mantle) ExitMantle();
+	if (PreviousMovementMode==MOVE_Custom && PreviousMovementMode==CMOVE_Grind) ExitGrind();
  	
  	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
  	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
+	if (IsCustomMovementMode(CMOVE_Mantle)) EnterMantle(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
+	if (IsCustomMovementMode(CMOVE_Grind)) EnterGrind(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
  }
 #pragma endregion
 
@@ -1131,10 +1138,48 @@ bool UCocaineMovementComponent::TryGrind()
 		
 		CharacterOwner->MoveIgnoreActorAdd(GrindState.GrindingRail.Get());
 		GrindState.bMovingToGrindEntryPoint=true;
-		SetMovementMode(MOVE_Custom,CMOVE_Grind);
 	}
 	
 	return true;
+}
+
+void UCocaineMovementComponent::EnterGrind(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
+{
+}
+
+void UCocaineMovementComponent::ExitGrind()
+{
+}
+
+void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
+{
+	if (DeltaTime < MIN_TICK_TIME) return;
+	
+	const FVector LastLocation = UpdatedComponent->GetComponentLocation();
+	FVector NewLocation{};
+	FQuat NewRotation{};
+	
+	if (GrindState.bMovingToGrindEntryPoint)
+	{
+		GrindState.MoveToGrindEntryPointTimeElapsed+=DeltaTime;
+		checkf(GrindState.MoveToGrindEntryPointDuration>=UE_SMALL_NUMBER, TEXT("MoveToGrindEntryPointDuration must be greater than 0.0"))
+		float Alpha {GrindState.MoveToGrindEntryPointTimeElapsed/GrindState.MoveToGrindEntryPointDuration};
+		Alpha = FMath::Clamp(Alpha,0.f,1.f);
+		
+		NewLocation = FMath::Lerp(GrindState.GrindDetectionLocation,GrindState.GrindEntryLocation,Alpha);
+		NewRotation = FQuat::Slerp(GrindState.GrindDetectionRotation,GrindState.GrindEntryRotation,Alpha);
+	}
+	else
+	{
+		
+	}
+	Iterations++;
+	bJustTeleported = false;
+	
+	FHitResult Hit{};
+	SafeMoveUpdatedComponent(NewLocation-LastLocation,NewRotation,true,Hit);
+	
+	Velocity = (UpdatedComponent->GetComponentLocation()-LastLocation)/DeltaTime;
 }
 #pragma endregion 
 

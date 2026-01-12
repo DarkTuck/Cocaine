@@ -219,6 +219,9 @@ private:
 	// Grinding
 private:
 	bool TryGrind();
+	void EnterGrind(EMovementMode PrevMode,ECustomMovementMode PrevCustomMode);
+	void ExitGrind();
+	void PhysGrind(float DeltaTime,int32 Iterations);
 	
 	// Flying
 public:
