@@ -130,6 +130,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	
 	// Grind
 	UPROPERTY(EditAnywhere) float GrindDetectionRadius = 50;
+	UPROPERTY(EditAnywhere) float GrindSpeed = 100;
 	UPROPERTY() FGrindState GrindState{};
 #pragma endregion 
 #pragma region Transient
@@ -171,6 +172,8 @@ public:
     virtual bool CanCrouchInCurrentState() const override;
 	virtual float GetMaxSpeed() const override;
 	virtual float GetMaxBrakingDeceleration() const override;
+	virtual bool CanAttemptJump() const override;
+	virtual  void AddInputVector(FVector WorldVector, bool bForce = false) override;
 protected:
 	virtual void InitializeComponent() override;
 	virtual void UpdateFromCompressedFlags(uint8 InFlags) override;
