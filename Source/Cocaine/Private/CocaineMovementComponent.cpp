@@ -116,6 +116,14 @@ UCocaineMovementComponent::UCocaineMovementComponent()
 {
 	NavAgentProps.bCanCrouch=true;
 }
+
+void UCocaineMovementComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	GrindState={};
+}
+
 void UCocaineMovementComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
@@ -1084,9 +1092,9 @@ bool UCocaineMovementComponent::TryGrind()
 	if (!Hit.bBlockingHit) return false;
 	SLOG("Grind Hit")
 
-	const AGrindingRail* GrindingRail = CastChecked<AGrindingRail>(Hit.GetActor());
+	AGrindingRail* GrindingRailHit = CastChecked<AGrindingRail>(Hit.GetActor());
 	const FVector CharacterLocation = GetActorLocation();
-	const USplineComponent* GrindSpline = GrindingRail->GetGrindRail();
+	USplineComponent* GrindSpline = GrindingRailHit->GetGrindRail();
 	const FVector CharacterForward = UpdatedComponent->GetForwardVector();
 	
 	FTransform GrindSplineTransform = GrindSpline->FindTransformClosestToWorldLocation(CharacterLocation,ESplineCoordinateSpace::World);
@@ -1103,6 +1111,29 @@ bool UCocaineMovementComponent::TryGrind()
 		SPHERE(SphereLocation,GrindDetectionRadius,FColor::Cyan);
 	}
 	
+	//save to struct
+	{
+		GrindState.GrindingRail=GrindingRailHit;
+		GrindState.GrindSplineComponent=GrindSpline;
+		GrindState.GrindDetectionLocation=CharacterLocation;
+		GrindState.GrindDetectionRotation=CharacterOwner->GetActorQuat();
+		GrindState.GrindEntryLocation=GrindSplineTransform.GetLocation();
+		GrindState.GrindEntryRotation=GrindSplineTransform.GetRotation();
+		GrindState.DistanceAlongGrind=GrindState.GrindSplineComponent->GetDistanceAlongSplineAtLocation(GrindState.GrindEntryLocation, ESplineCoordinateSpace::World);
+		GrindState.MoveToGrindEntryPointTimeElapsed=0.f;
+		GrindState.bGrindingForward=FVector::DotProduct(CharacterForward,GrindState.GrindEntryRotation.GetForwardVector())>0.f;
+		
+		// set GrindEntryRotation to match a grinding direction if were not grinding forward
+		if (!GrindState.bGrindingForward)
+		{
+			GrindState.GrindEntryRotation*=FQuat(FVector::UpVector,UE_PI);
+		}
+		
+		CharacterOwner->MoveIgnoreActorAdd(GrindState.GrindingRail.Get());
+		GrindState.bMovingToGrindEntryPoint=true;
+		SetMovementMode(MOVE_Custom,CMOVE_Grind);
+	}
+	
 	return true;
 }
 #pragma endregion 
@@ -1114,12 +1145,12 @@ bool UCocaineMovementComponent::IsServer() const
 	return CharacterOwner->HasAuthority();
 }
 
-float UCocaineMovementComponent::CapR() const
+float UCocaineMovementComponent::CapR() const // get Characters Capsule Radius
 {
 	return CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleRadius();
 }
 
-float UCocaineMovementComponent::CapHH() const
+float UCocaineMovementComponent::CapHH() const // get Characters Capsule half height
 {
 	return CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 }

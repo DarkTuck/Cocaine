@@ -7,6 +7,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "CocaineMovementComponent.generated.h"
 
+class AGrindingRail;
+class USplineComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDashStartDelegate);
 /**
  * 
@@ -18,8 +20,29 @@ enum ECustomMovementMode
 	CMOVE_Slide	UMETA(DisplayName="Slide"),
 	CMOVE_Prone UMETA(DisplayName="Prone"),
 	CMOVE_Mantle UMETA(DisplayName="Mantle"),
+	CMOVE_Grind UMETA(DisplayName="Grind"),
 	CMOVE_MAX 	UMETA(Hidden),
 };
+
+USTRUCT()
+struct FGrindState
+{
+	GENERATED_BODY()
+	
+	UPROPERTY() TWeakObjectPtr<AGrindingRail> GrindingRail{nullptr};
+	UPROPERTY() TWeakObjectPtr<USplineComponent> GrindSplineComponent{nullptr};
+	
+	FQuat GrindDetectionRotation{};
+	FQuat GrindEntryRotation{};
+	FVector GrindDetectionLocation{};
+	FVector GrindEntryLocation{};
+	float MoveToGrindEntryPointDuration {0.2f};
+	float MoveToGrindEntryPointTimeElapsed {0.f};
+	float DistanceAlongGrind {0.0f};
+	bool bGrindingForward {true};
+	bool bMovingToGrindEntryPoint {true};
+};
+
 UCLASS()
 class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 {
@@ -107,6 +130,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	
 	// Grind
 	UPROPERTY(EditAnywhere) float GrindDetectionRadius = 50;
+	UPROPERTY() FGrindState GrindState{};
 #pragma endregion 
 #pragma region Transient
 	UPROPERTY(Transient) ACocaineCharacter* CocaineCharacterOwner;
@@ -140,6 +164,7 @@ public:
 	
 public:
 	UCocaineMovementComponent();
+	virtual void BeginPlay() override;
 	// Character Movement Component
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 	virtual bool IsMovingOnGround() const override;
