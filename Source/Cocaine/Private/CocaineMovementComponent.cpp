@@ -15,7 +15,7 @@ float MacroDuration = 2.f;
 #define POINT(x,c) DrawDebugPoint(GetWorld(),x,10,c,!MacroDuration,MacroDuration); // draw debug point macro
 #define LINE(x1,x2,c) DrawDebugLine(GetWorld(),x1,x2,c,!MacroDuration,MacroDuration); // draw debug line macro
 #define CAPSULE(x,c) DrawDebugCapsule(GetWorld(),x,CapHH(),CapR(),FQuat::Identity,c,!MacroDuration,MacroDuration); // draw debug capsule macro
-#define SPHERE(c,r,color) DrawDebugSphere(GetWorld(),c,r,32,color,false,MacroDuration); // draw debug sphere macro
+#define SPHERE(c,r,color) DrawDebugSphere(GetWorld(),c,r,6,color,false,MacroDuration); // draw debug sphere macro
 #else
 #define SLOG(x)
 #define POINT(x,c)
