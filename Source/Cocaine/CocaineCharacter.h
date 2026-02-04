@@ -110,9 +110,12 @@ public:
 private:
 	void Interact();
 	void StopInteract();
-	
-	float maxLineDistance {1000.f};
 	bool bIsGrappling{false};
 	FVector GrapplingPoint;
+protected:
+	UPROPERTY(BlueprintReadWrite,EditDefaultsOnly,Category="Grappling")
+	float GrappleForce{1000000.f};
+	UPROPERTY(BlueprintReadWrite,EditDefaultsOnly,Category="Grappling")
+	float MaxLineDistance {1000.f};
 };
 

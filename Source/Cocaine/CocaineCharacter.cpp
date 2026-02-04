@@ -100,7 +100,7 @@ void ACocaineCharacter::Tick(float DeltaSeconds)
 	{
 		GrappleCable->EndLocation=GetActorTransform().InverseTransformPosition(GrapplingPoint);
 		
-		GetCharacterMovement()->AddForce((GrapplingPoint-GetActorLocation()).GetSafeNormal()*1000000.f);
+		GetCharacterMovement()->AddForce((GrapplingPoint-GetActorLocation()).GetSafeNormal()*GrappleForce);
 	}
 }
 
@@ -119,7 +119,7 @@ FCollisionQueryParams ACocaineCharacter::GetIgnoreCharacterParams() const
 void ACocaineCharacter::Interact()
 {
 	const FVector Start{GetCapsuleComponent()->GetComponentLocation()};
-	const FVector End{Start+(maxLineDistance*FirstPersonCameraComponent->GetForwardVector())};
+	const FVector End{Start+(MaxLineDistance*FirstPersonCameraComponent->GetForwardVector())};
 	DrawDebugLine(GetWorld(),Start,End,FColor::Emerald);
 	
 	FHitResult Hit;
