@@ -7,6 +7,7 @@
 #include "Net/UnrealNetwork.h"
 #include "DrawDebugHelpers.h"
 #include "GrindingRail.h"
+#include "Camera/CameraComponent.h"
 
 // Helper Macros
 #if 1
@@ -25,19 +26,26 @@ float MacroDuration = 2.f;
 #endif
 
 #pragma region Saved Move
-UCocaineMovementComponent::FSavedMove_Cocaine::FSavedMove_Cocaine()
-{
-	Saved_bWantsToSprint=0;
-}
+UCocaineMovementComponent::FSavedMove_Cocaine::FSavedMove_Cocaine() : Saved_bWantsToSprint(0), Saved_bWantsToDash(0),
+                                                                      Saved_bWantsToKick(0),
+                                                                      Saved_bPressedCocaineJump(0),
+                                                                      Saved_bPrevWantsToCrouch(0),
+                                                                      Saved_bWantsToProne(0),
+                                                                      Saved_bHadAnimRootMotion(0),Saved_bTransitionFinished(0){}
+
 
 bool UCocaineMovementComponent::FSavedMove_Cocaine::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const
 {
-	FSavedMove_Cocaine* NewCocaineMove = static_cast<FSavedMove_Cocaine*>(NewMove.Get());
+	const FSavedMove_Cocaine* NewCocaineMove = static_cast<FSavedMove_Cocaine*>(NewMove.Get());
 	if (Saved_bWantsToSprint != NewCocaineMove->Saved_bWantsToSprint)
 	{
 		return false;
 	}
 	if (Saved_bWantsToDash!=NewCocaineMove->Saved_bWantsToDash)
+	{
+		return false;
+	}
+	if (Saved_bWantsToKick!=NewCocaineMove->Saved_bWantsToKick)
 	{
 		return false;
 	}
@@ -51,6 +59,7 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::Clear()
 	Saved_bWantsToSprint = 0;
 	Saved_bWantsToDash = 0;
 	Saved_bPressedCocaineJump=0;
+	Saved_bWantsToKick=0;
 	
 	Saved_bHadAnimRootMotion=0;
 	Saved_bTransitionFinished=0;
@@ -65,6 +74,7 @@ uint8 UCocaineMovementComponent::FSavedMove_Cocaine::GetCompressedFlags() const
 	if (Saved_bWantsToSprint) Result |=  FLAG_Sprint;
 	if (Saved_bWantsToDash) Result |=  FLAG_Dash;
 	if (Saved_bPressedCocaineJump) Result |= FLAG_JumpPressed;
+	if (Saved_bWantsToKick) Result |= FLAG_Kick;
 	
 	return Result;
 }
@@ -77,6 +87,7 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::SetMoveFor(ACharacter* C, fl
 	Saved_bPrevWantsToCrouch=CharacterMovement->Safe_bPrevWantsToCrouch;
 	Saved_bWantsToProne=CharacterMovement->Safe_bWantsToProne;
 	Saved_bWantsToDash=CharacterMovement->Safe_bWantsToDash;
+	Saved_bWantsToKick=CharacterMovement->Safe_bWantsToKick;
 	
 	Saved_bPressedCocaineJump=CharacterMovement->CocaineCharacterOwner->bPressedCocaineJump;
 	
@@ -92,6 +103,7 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::PrepMoveFor(ACharacter* C)
 	CharacterMovement->Safe_bPrevWantsToCrouch=Saved_bPrevWantsToCrouch;
 	CharacterMovement->Safe_bWantsToProne=Saved_bWantsToProne;
 	CharacterMovement->Safe_bWantsToDash=Saved_bWantsToDash;
+	CharacterMovement->Safe_bWantsToKick=Saved_bWantsToKick;
 	
 	CharacterMovement->CocaineCharacterOwner->bPressedCocaineJump=Saved_bPressedCocaineJump;
 	CharacterMovement->Safe_bHadAnimRootMotion=Saved_bHadAnimRootMotion;
@@ -137,6 +149,7 @@ void UCocaineMovementComponent::UpdateFromCompressedFlags(uint8 InFlags)
 
 	Safe_bWantsToSprint =(InFlags & FSavedMove_Cocaine::FLAG_Sprint)!=0;
 	Safe_bWantsToDash =(InFlags & FSavedMove_Cocaine::FLAG_Dash)!=0;
+	Safe_bWantsToKick =(InFlags & FSavedMove_Cocaine::FLAG_Kick)!=0;
 }
 FNetworkPredictionData_Client* UCocaineMovementComponent::GetPredictionData_Client() const
 {
@@ -244,11 +257,25 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	const bool bAuthProxy = CharacterOwner->HasAuthority() && !CharacterOwner->IsLocallyControlled();
 	if (Safe_bWantsToDash&&CanDash())
 	{
-		if (!bAuthProxy||GetWorld()->GetTimeSeconds() - DashStartTime > AuthDashCooldownDuration)
+		if (!bAuthProxy||GetTS() - DashStartTime > AuthDashCooldownDuration)
 		{
 			bRootMotionDash?PerformDashRootMotion():PerformDash();
 			Safe_bWantsToDash=false;
 			Proxy_bDashStart=!Proxy_bDashStart;
+		}
+		else
+		{
+			UE_LOG(LogTemp,Warning,TEXT("Client tried to cheat"));
+		}
+	}
+	// Kick
+	if (Safe_bWantsToKick&&CanKick())
+	{
+		if (!bAuthProxy||GetTS()-KickStartTime>AuthKickCooldownDuration)
+		{
+			PerformKick();
+			Safe_bWantsToKick=false;
+			Proxy_bKick=!Proxy_bKick;
 		}
 		else
 		{
@@ -849,7 +876,7 @@ bool UCocaineMovementComponent::CanDash() const
 
 void UCocaineMovementComponent::PerformDash()
 {
-	DashStartTime=GetWorld()->GetTimeSeconds();
+	DashStartTime=GetTS();
 	
 	FVector DashDirection = (Acceleration.IsNearlyZero() ? UpdatedComponent->GetForwardVector() : Acceleration).GetSafeNormal2D();
 	DashDirection += FVector::UpVector * .1f;
@@ -866,7 +893,7 @@ void UCocaineMovementComponent::PerformDash()
 
 void UCocaineMovementComponent::PerformDashRootMotion()
 {
-	DashStartTime=GetWorld()->GetTimeSeconds();
+	DashStartTime=GetTS();
 	
 	//changing mode to flying will not apply gravity to RootMotion animation (Z coordinate)
 	SetMovementMode(bUseGravityInRootMotion ? MOVE_Falling : MOVE_Flying);
@@ -1266,6 +1293,38 @@ void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
 	if (!bShouldContinueGrinding) SetMovementMode(MOVE_Falling);
 	SLOG(TEXT("Distance Along Spline: ") + FString::SanitizeFloat(GrindState.DistanceAlongGrind) + TEXT(""))
 }
+#pragma endregion
+#pragma region Kick
+void UCocaineMovementComponent::OnKickCooldownFinished()
+{
+	Safe_bWantsToKick = true;
+}
+
+bool UCocaineMovementComponent::CanKick() const
+{
+	auto Params = CocaineCharacterOwner->GetIgnoreCharacterParams();
+	const FVector TraceStart = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetComponentLocation();
+	FVector TraceEnd = TraceStart + CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*KickRange;
+    FHitResult Hit{};
+    bool bHit = GetWorld()->LineTraceSingleByProfile(Hit, TraceStart, TraceEnd, "BlockAll",Params);
+    LINE(TraceStart,TraceEnd,FColor::Red);
+	return Hit.IsValidBlockingHit();
+}
+
+void UCocaineMovementComponent::PerformKick()
+{
+	SLOG("Perform Kick")
+	KickStartTime = GetTS();
+	FVector KickDirection = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*-1.f;
+	//KickDirection.Normalize();
+	KickDirection*=KickForce;
+	SLOG(FString::Printf(TEXT("Kick Direction: %s"), *KickDirection.ToString()))
+	CocaineCharacterOwner->LaunchCharacter(KickDirection,true,true);
+	
+	SetMovementMode(MOVE_Flying);
+	
+	
+}
 #pragma endregion 
 
 #pragma region Helpers
@@ -1283,6 +1342,11 @@ float UCocaineMovementComponent::CapR() const // get Characters Capsule Radius
 float UCocaineMovementComponent::CapHH() const // get Characters Capsule half height
 {
 	return CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+}
+
+double UCocaineMovementComponent::GetTS() const
+{
+	return GetWorld()->GetTimeSeconds();
 }
 #pragma endregion
 
@@ -1310,8 +1374,7 @@ void UCocaineMovementComponent::CrouchReleased()
 
 void UCocaineMovementComponent::DashPressed()
 {
-	float CurrentTime = GetWorld()->GetTimeSeconds();
-	if (CurrentTime-DashStartTime>=DashCooldownDuration)
+	if (const float CurrentTime = GetTS(); CurrentTime-DashStartTime>=DashCooldownDuration)
 	{
 		Safe_bWantsToDash=true;
 	}
@@ -1326,11 +1389,29 @@ void UCocaineMovementComponent::DashReleased()
 	Safe_bWantsToDash=false;
 }
 
-bool UCocaineMovementComponent::IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const
+void UCocaineMovementComponent::KickPressed()
+{
+	if (const float CurrentTime = GetTS(); CurrentTime-KickStartTime>=KickCooldownDuration)
+	{
+		Safe_bWantsToKick=true;
+	}
+	else
+	{
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_KickCooldown,this,&UCocaineMovementComponent::OnKickCooldownFinished,KickCooldownDuration-(CurrentTime-KickStartTime));
+	}
+}
+
+void UCocaineMovementComponent::KickReleased()
+{
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_KickCooldown);
+	Safe_bWantsToKick=false;
+}
+
+bool UCocaineMovementComponent::IsCustomMovementMode(const ECustomMovementMode InCustomMovementMode) const
 {
 	return MovementMode==MOVE_Custom&&CustomMovementMode==InCustomMovementMode;
 }
-bool UCocaineMovementComponent::IsMovementMode(EMovementMode InMovementMode) const
+bool UCocaineMovementComponent::IsMovementMode(const EMovementMode InMovementMode) const
 {
 	return InMovementMode == MovementMode;
 }
@@ -1346,6 +1427,7 @@ void UCocaineMovementComponent::GetLifetimeReplicatedProps(TArray<class FLifetim
 	
 	DOREPLIFETIME_CONDITION(UCocaineMovementComponent, Proxy_bShortMantle,COND_SkipOwner)
 	DOREPLIFETIME_CONDITION(UCocaineMovementComponent, Proxy_bTallMantle,COND_SkipOwner)
+	DOREPLIFETIME_CONDITION(UCocaineMovementComponent, Proxy_bKick,COND_SkipOwner)
 }
 
 void UCocaineMovementComponent::OnRep_DashStart()
@@ -1370,6 +1452,14 @@ void UCocaineMovementComponent::OnRep_TallMantle()
 	if (ProxyTallMantleMontage)
 	{
 		CharacterOwner->PlayAnimMontage(ProxyTallMantleMontage);
+	}
+}
+
+void UCocaineMovementComponent::OnRep_Kick()
+{
+	if (Proxy_bKick)
+	{
+		
 	}
 }
 #pragma endregion

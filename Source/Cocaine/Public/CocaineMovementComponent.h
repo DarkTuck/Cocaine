@@ -55,12 +55,13 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 		{
 			FLAG_Sprint		= 0x10,
 			FLAG_Dash		= 0x20,
-			FLAG_Custom_2	= 0x40,
+			FLAG_Kick	= 0x40,
 			FLAG_Custom_3	= 0x80,
 		};
 		// Flags
 		uint8 Saved_bWantsToSprint:1;
 		uint8 Saved_bWantsToDash:1;
+		uint8 Saved_bWantsToKick:1;
 		uint8 Saved_bPressedCocaineJump:1;
 		
 		// Other Variables
@@ -133,6 +134,12 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	float GrindDetectionRadiusSquared;
 	UPROPERTY(EditAnywhere) float GrindSpeed = 100;
 	UPROPERTY() FGrindState GrindState{};
+	
+	// Kick
+	UPROPERTY(EditDefaultsOnly) float KickForce = 100;
+	UPROPERTY(EditDefaultsOnly) float KickCooldownDuration = .5f;
+	UPROPERTY(EditDefaultsOnly) float AuthKickCooldownDuration = .4f;
+	UPROPERTY(EditDefaultsOnly) float KickRange=200.f;
 #pragma endregion 
 #pragma region Transient
 	UPROPERTY(Transient) ACocaineCharacter* CocaineCharacterOwner;
@@ -141,12 +148,15 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	bool Safe_bWantsToSprint;
 	bool Safe_bWantsToProne;
 	bool Safe_bWantsToDash;
+	bool Safe_bWantsToKick;
 	
 	bool Safe_bHadAnimRootMotion;
 	bool Safe_bPrevWantsToCrouch;
 	float DashStartTime;
+	float KickStartTime;
 	FTimerHandle TimerHandle_EnterProne;
 	FTimerHandle TimerHandle_DashCooldown;
+	FTimerHandle TimerHandle_KickCooldown;
 	
 	bool Safe_bTransitionFinished;
 	TSharedPtr<FRootMotionSource_MoveToForce> TransitionRMS;
@@ -159,6 +169,8 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(ReplicatedUsing=OnRep_DashStart) bool Proxy_bDashStart;
 	UPROPERTY(ReplicatedUsing=OnRep_ShortMantle) bool Proxy_bShortMantle;
 	UPROPERTY(ReplicatedUsing=OnRep_TallMantle) bool Proxy_bTallMantle;
+	UPROPERTY(ReplicatedUsing=OnRep_Kick) bool Proxy_bKick;
+	
 
 	// Delegates
 public:
@@ -227,6 +239,12 @@ private:
 	void ExitGrind();
 	void PhysGrind(float DeltaTime,int32 Iterations);
 	
+	// Kick
+private:
+	void OnKickCooldownFinished();
+	bool CanKick() const;
+	void PerformKick();
+	
 	// Flying
 public:
 	FORCEINLINE void SetFlying(const bool Set) {SetMovementMode(Set?MOVE_Flying:MOVE_Walking);}
@@ -236,6 +254,7 @@ private:
 	bool IsServer() const;
 	float CapR() const; // Get Capsule radius
 	float CapHH() const; // Get Capsule half height
+	double GetTS() const; // Get Time Seconds
 
 	// Interface
 public:
@@ -248,6 +267,9 @@ public:
 	UFUNCTION(BlueprintCallable) void DashPressed();
 	UFUNCTION(BlueprintCallable) void DashReleased();
 	
+	UFUNCTION(BlueprintCallable) void KickPressed();
+	UFUNCTION(BlueprintCallable) void KickReleased();
+	
 	UFUNCTION(BlueprintCallable) bool IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const;
 	UFUNCTION(BlueprintCallable) bool IsMovementMode(EMovementMode InMovementMode) const;
 	
@@ -258,6 +280,7 @@ private:
 	UFUNCTION() void OnRep_DashStart();
 	UFUNCTION() void OnRep_ShortMantle();
 	UFUNCTION() void OnRep_TallMantle();
+	UFUNCTION() void OnRep_Kick();
 	
 	
 };
