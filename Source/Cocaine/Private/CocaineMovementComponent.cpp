@@ -226,7 +226,7 @@ void UCocaineMovementComponent::AddInputVector(FVector WorldVector, bool bForce)
 void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
 	// Slide
-	if (MovementMode==MOVE_Walking&&!bWantsToCrouch&&Safe_bPrevWantsToCrouch) // Enter
+	if (MovementMode==MOVE_Walking&&bWantsToCrouch&&Safe_bPrevWantsToCrouch) // Enter
 	{
 		if (CanSlide())
 		{
@@ -424,6 +424,7 @@ bool UCocaineMovementComponent::CanSlide() const
 
 void UCocaineMovementComponent::PhysSlide(float DeltaTime, int32 Iterations)
 {
+	SLOG("Sliding")
 	if (DeltaTime < MIN_TICK_TIME)
 	{
 		return;
@@ -1294,6 +1295,7 @@ void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
 	SLOG(TEXT("Distance Along Spline: ") + FString::SanitizeFloat(GrindState.DistanceAlongGrind) + TEXT(""))
 }
 #pragma endregion
+
 #pragma region Kick
 void UCocaineMovementComponent::OnKickCooldownFinished()
 {
