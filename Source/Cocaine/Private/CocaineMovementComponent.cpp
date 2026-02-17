@@ -924,7 +924,7 @@ bool UCocaineMovementComponent::TryMantle()
 	FHitResult FrontHit;
 	float CheckDistance = FMath::Clamp(Velocity|Fwd,CapR()+30,MantleMaxDistance);
 	FVector FrontStart = BaseLocation+FVector::UpVector*(MaxStepHeight-1);
-	int8 Iterations = 6; // interactions of line trace increasing it should help mantle to perform on thin geometry
+	constexpr int8 Iterations = 6; // interactions of line trace increasing it should help mantle to perform on thin geometry
 	for (int8 i = 0; i < Iterations; i++)
 	{
 		LINE(FrontStart, FrontStart + Fwd * CheckDistance, FColor::Red);
