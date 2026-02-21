@@ -43,7 +43,23 @@ protected:
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* MoveAction;
-
+	
+	/** Crouch Input Action */
+	UPROPERTY(EditAnywhere, Category ="Input")
+	UInputAction* CrouchAction;
+	
+	/** Sprint Input Action */
+	UPROPERTY(EditAnywhere, Category ="Input")
+	UInputAction* SprintAction;
+	
+	/** Kick Input Action */
+	UPROPERTY(EditAnywhere, Category ="Input")
+	UInputAction* KickAction;
+	
+	/** Dash Input Action */
+	UPROPERTY(EditAnywhere, Category ="Input")
+	UInputAction* DashAction;
+	
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	class UInputAction* LookAction;
@@ -51,6 +67,8 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	class UInputAction* MouseLookAction;
+	
+
 	
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* InteractAction;
@@ -104,12 +122,25 @@ public:
 	/** Returns first person camera component **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
-	FORCEINLINE UCocaineMovementComponent* GetCocaineCharacterMovement() const {return CocaineMovementComponent;}
+	UCocaineMovementComponent* GetCocaineCharacterMovement() const {return CocaineMovementComponent;}
 
 	FCollisionQueryParams GetIgnoreCharacterParams() const;
-private:
-	void Interact();
-	void StopInteract();
+protected:
+	virtual void Interact();
+	virtual void StopInteract();
+	
+	virtual void PerformKick();
+	virtual void StopKick();
+	
+	virtual void PerformCrouch();
+	virtual void StopCrouch();
+	
+	virtual void Sprint();
+	virtual void StopSprint();
+	
+	virtual void Dash();
+	virtual void StopDash();
+	
 	bool bIsGrappling{false};
 	FVector GrapplingPoint;
 protected:
@@ -118,4 +149,3 @@ protected:
 	UPROPERTY(BlueprintReadWrite,EditDefaultsOnly,Category="Grappling")
 	float MaxLineDistance {1000.f};
 };
-

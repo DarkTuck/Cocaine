@@ -86,6 +86,22 @@ void ACocaineCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		// Interact
 		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Triggered,this,&ACocaineCharacter::Interact);
 		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Completed,this,&ACocaineCharacter::StopInteract);
+		
+		// Kick
+		EnhancedInputComponent->BindAction(KickAction, ETriggerEvent::Started,this,&ACocaineCharacter::PerformKick);
+		EnhancedInputComponent->BindAction(KickAction,ETriggerEvent::Completed,this,&ACocaineCharacter::StopKick);
+		
+		// Crouch
+		EnhancedInputComponent->BindAction(CrouchAction,ETriggerEvent::Started,this,&ACocaineCharacter::PerformCrouch);
+		EnhancedInputComponent->BindAction(CrouchAction,ETriggerEvent::Completed,this,&ACocaineCharacter::StopCrouch);
+		
+		// Sprint
+		EnhancedInputComponent->BindAction(SprintAction,ETriggerEvent::Started,this,&ACocaineCharacter::Sprint);
+		EnhancedInputComponent->BindAction(SprintAction,ETriggerEvent::Completed,this,&ACocaineCharacter::StopSprint);
+		
+		// Dash
+		EnhancedInputComponent->BindAction(DashAction,ETriggerEvent::Started,this,&ACocaineCharacter::Dash);
+		EnhancedInputComponent->BindAction(DashAction,ETriggerEvent::Completed,this,&ACocaineCharacter::StopDash);
 	}
 	else
 	{
@@ -140,6 +156,45 @@ void ACocaineCharacter::StopInteract()
 		GetCocaineCharacterMovement()->SetFlying(false);
 	}
 	GrappleCable->SetVisibility(false);
+}
+
+void ACocaineCharacter::PerformKick()
+{
+	GetCocaineCharacterMovement()->KickPressed();
+}
+
+void ACocaineCharacter::StopKick()
+{
+	GetCocaineCharacterMovement()->KickReleased();	
+}
+
+void ACocaineCharacter::PerformCrouch()
+{
+	GetCocaineCharacterMovement()->CrouchPressed();
+}
+void ACocaineCharacter::StopCrouch()
+{
+	GetCocaineCharacterMovement()->CrouchReleased();
+}
+
+void ACocaineCharacter::Sprint()
+{
+	GetCocaineCharacterMovement()->SprintPressed();
+}
+
+void ACocaineCharacter::StopSprint()
+{
+	GetCocaineCharacterMovement()->SprintReleased();
+}
+
+void ACocaineCharacter::Dash()
+{
+	GetCocaineCharacterMovement()->DashPressed();
+}
+
+void ACocaineCharacter::StopDash()
+{
+	GetCocaineCharacterMovement()->DashReleased();
 }
 
 
