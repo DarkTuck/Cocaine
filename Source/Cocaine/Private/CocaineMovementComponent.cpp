@@ -1070,8 +1070,9 @@ void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 		const FVector OldLocation = UpdatedComponent->GetComponentLocation();
 		FVector ToTarget = MantleTarget - OldLocation;
 		const float Distance = ToTarget.Size();
+		constexpr float Tolerance = 20.f;
 	
-		if (Distance < 10.f)
+		if (Distance < Tolerance)
 		{
 			Velocity = FVector::ZeroVector;
 			SetMovementMode(MOVE_Walking);
@@ -1100,7 +1101,7 @@ void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 		}
  
 		const FVector NewLocation = UpdatedComponent->GetComponentLocation();
-		Velocity = (NewLocation - OldLocation) / timeTick;
+		//Velocity = (NewLocation - OldLocation) / timeTick;
  
 		if (NewLocation.Equals(OldLocation, 0.001f))
 		{
