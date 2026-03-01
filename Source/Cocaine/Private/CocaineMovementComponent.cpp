@@ -1149,7 +1149,8 @@ bool UCocaineMovementComponent::TryGrind()
 	if (!Hit.bBlockingHit) return false;
 	SLOG("Grind Hit")
 
-	AGrindingRail* GrindingRailHit {CastChecked<AGrindingRail>(Hit.GetActor())};
+	AGrindingRail* GrindingRailHit {Cast<AGrindingRail>(Hit.GetActor())};
+	if (GrindingRailHit==nullptr) return false;
 	const FVector CharacterLocation {GetActorLocation()};
 	USplineComponent* GrindSpline {GrindingRailHit->GetGrindRail()};
 	if (!GrindSpline) return false;
