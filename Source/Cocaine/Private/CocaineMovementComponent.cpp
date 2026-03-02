@@ -1032,7 +1032,7 @@ bool UCocaineMovementComponent::TryMantle()
 		}
 	}
 	*/
-	MantleTarget = ClearCapLocation+(MantleTargetOffset*CharacterOwner->GetActorForwardVector());
+	MantleTarget = ClearCapLocation+(MantleTargetOffset+FVector::ForwardVector);
 	return true;
 }
 

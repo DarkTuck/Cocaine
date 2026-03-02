@@ -29,8 +29,8 @@ public class Cocaine : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 			"Cocaine",
-			"Cocaine/Variant_Horror",
-			"Cocaine/Variant_Horror/UI",
+			//"Cocaine/Variant_Horror",
+			//"Cocaine/Variant_Horror/UI",
 			"Cocaine/Variant_Shooter",
 			"Cocaine/Variant_Shooter/AI",
 			"Cocaine/Variant_Shooter/UI",

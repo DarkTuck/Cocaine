@@ -36,7 +36,7 @@ void AGrindingRail::RebuildGeneratedMesh(UDynamicMesh* TargetMesh)
 	Brush=UGeometryScriptLibrary_PolyPathFunctions::CreateCirclePath2D(Center,Radius,Roundness);
 	
 	USplineComponent* HelperSpline = NewObject<USplineComponent>(this,USplineComponent::StaticClass());
-	FVector Offset(0,0,Height);
+	const FVector Offset(0,0,Height);
 	UGeometryHelpers::CreateOffsettedSpline(HelperSpline, Spline,Offset, CornerRadius);
 	
 	TArray<FTransform> Frames{};
