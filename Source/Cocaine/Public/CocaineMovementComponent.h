@@ -121,6 +121,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly,Category="Mantle") float MantleMaxSurfaceAngle=40;
 	UPROPERTY(EditDefaultsOnly,Category="Mantle") float MantleMaxAlignmentAngle=45;
 	UPROPERTY(EditDefaultsOnly,Category="Mantle") float MantleMaxSpeed=10000;
+	UPROPERTY(EditDefaultsOnly,Category="Mantle") FVector MantleTargetOffset=FVector(15,0,15);
 	UPROPERTY(EditDefaultsOnly,Category="Mantle") UAnimMontage* TallMantleMontage;
 	UPROPERTY(EditDefaultsOnly,Category="Mantle") UAnimMontage* TransitionTallMantleMontage;
 	UPROPERTY(EditDefaultsOnly,Category="Mantle") UAnimMontage* ProxyTallMantleMontage;

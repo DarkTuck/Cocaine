@@ -1032,7 +1032,7 @@ bool UCocaineMovementComponent::TryMantle()
 		}
 	}
 	*/
-	MantleTarget = ClearCapLocation;
+	MantleTarget = ClearCapLocation+(MantleTargetOffset*CharacterOwner->GetActorForwardVector());
 	return true;
 }
 
@@ -1049,6 +1049,7 @@ void UCocaineMovementComponent::ExitMantle()
 
 void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 {
+	constexpr EMovementMode ExitMovementMode = MOVE_Falling;
 	SLOG("PhysMantle")
 	if (DeltaTime < MIN_TICK_TIME)
 	{
@@ -1063,6 +1064,7 @@ void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 		// Perform the move
 	while ( (remainingTime >= MIN_TICK_TIME) && (Iterations < MaxSimulationIterations) && CharacterOwner && (CharacterOwner->Controller || bRunPhysicsWithNoController || (CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy)) )
 	{
+		CharacterOwner->SetActorEnableCollision(false);
 		Iterations++;
 		bJustTeleported = false;
 		const float timeTick = GetSimulationTimeStep(remainingTime, Iterations);
@@ -1075,13 +1077,13 @@ void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 		if (Distance < Tolerance)
 		{
 			Velocity = FVector::ZeroVector;
-			SetMovementMode(MOVE_Walking);
+			CharacterOwner->SetActorEnableCollision(true);
+			SetMovementMode(ExitMovementMode);
 			StartNewPhysics(DeltaTime, Iterations);
 			return;
 		}
 		ToTarget.Normalize();
-		const float MaxSpeed = MantleMaxSpeed;
-		const FVector DesiredVelocity = ToTarget * MaxSpeed;
+		const FVector DesiredVelocity = ToTarget * MantleMaxSpeed;
 
 		Velocity = FMath::VInterpTo(Velocity, DesiredVelocity, timeTick, 8.f);
  
@@ -1089,6 +1091,7 @@ void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 		if (Delta.IsNearlyZero())
 		{
 			remainingTime = 0.f;
+			CharacterOwner->SetActorEnableCollision(true);
 			break;
 		}
  
@@ -1106,13 +1109,15 @@ void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 		if (NewLocation.Equals(OldLocation, 0.001f))
 		{
 			remainingTime = 0.f;
+			CharacterOwner->SetActorEnableCollision(true);
 			break; 
 		}
  
 		if (FVector::Dist(NewLocation, MantleTarget) < 10.f)
 		{
 			Velocity = FVector::ZeroVector;
-			SetMovementMode(MOVE_Walking);
+			CharacterOwner->SetActorEnableCollision(true);
+			SetMovementMode(ExitMovementMode);
 			remainingTime = 0.f;
 			break;
 		}
