@@ -201,6 +201,8 @@ protected:
 	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 	
+private:
+	void UpdateMult() const;
 	// slide	
 private:
 	void EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode);

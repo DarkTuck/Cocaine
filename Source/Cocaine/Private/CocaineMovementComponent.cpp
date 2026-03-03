@@ -2,6 +2,7 @@
 
 #include "Public/CocaineMovementComponent.h"
 
+#include "CocaineGameMode.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
@@ -379,10 +380,32 @@ void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 	}
 }
 
+void UCocaineMovementComponent::UpdateMult() const
+{
+	ACocaineGameMode* GameMode{Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())};
+	switch (CustomMovementMode)
+	{
+	case CMOVE_Grind:
+		GameMode->AddMult(Grind);
+		break;
+	case CMOVE_Mantle:
+		GameMode->AddMult(Mantle);
+		break;
+	case CMOVE_Slide:
+		GameMode->AddMult(Slide);
+		break;
+	default:
+		break;
+	}
+}
+
 // Movement Event
 void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
  {
  	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
+	
+	UpdateMult();
+	
  	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Slide) ExitSlide();
  	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Prone) ExitProne();
 	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Mantle) ExitMantle();
@@ -887,6 +910,7 @@ void UCocaineMovementComponent::PerformDash()
 	FHitResult Hit;
 	SafeMoveUpdatedComponent(FVector::ZeroVector,NewRotation,false,Hit);
 	
+	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Dash);
 	SetMovementMode(MOVE_Falling);
 	
 	DashStartDelegate.Broadcast();
@@ -1330,6 +1354,7 @@ void UCocaineMovementComponent::PerformKick()
 	SLOG(FString::Printf(TEXT("Kick Direction: %s"), *KickDirection.ToString()))
 	CocaineCharacterOwner->LaunchCharacter(KickDirection,true,true);
 	
+	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Kick);
 	SetMovementMode(MOVE_Flying);
 	
 	

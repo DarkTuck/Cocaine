@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CocaineGameMode.h"
 #include "GameFramework/GameModeBase.h"
 #include "ShooterGameMode.generated.h"
 
@@ -14,7 +15,7 @@ class UShooterUI;
  *  Keeps track of team scores
  */
 UCLASS(abstract)
-class COCAINE_API AShooterGameMode : public AGameModeBase
+class COCAINE_API AShooterGameMode : public ACocaineGameMode
 {
 	GENERATED_BODY()
 	
