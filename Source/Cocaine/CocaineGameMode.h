@@ -19,34 +19,47 @@ enum EMultType
 	Kick,
 	Dash,
 	Grind,
-	Mantle
+	Mantle,
+	Kill
 };
 USTRUCT()
 struct FCurrents
 {
 	GENERATED_BODY()
-	float currentScore;
-	float currentMult;
+	int currentScore;
+	int currentMult;
 };
 
 UCLASS(abstract)
 class ACocaineGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	UPROPERTY(EditDefaultsOnly,Category="Mult System") float SlideMultValue=2.f;
-	UPROPERTY(EditDefaultsOnly,Category="Mult System") float JumpMultValue=2.f;
-	UPROPERTY(EditDefaultsOnly,Category="Mult System") float KickMultValue=2.f;
-	UPROPERTY(EditDefaultsOnly,Category="Mult System") float DashMultValue=2.f;
-	UPROPERTY(EditDefaultsOnly,Category="Mult System") float GrindMultValue=2.f;
-	UPROPERTY(EditDefaultsOnly,Category="Mult System") float MantleMultValue=2.f;
-	UPROPERTY(EditDefaultsOnly,Category="Mult System") float MultFadeDuration=5.f;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int SlideMultValue=2;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int JumpMultValue=2;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KickMultValue=2;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int DashMultValue=2;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrindMultValue=2;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int MantleMultValue=2;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KillMultValue=2;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") float MultFadeDuration=5;
 	
-	float SavedScore;
-	FCurrents Currents{0,1};
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System") int StartingScore=0;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System") int BaseScoreGain=10;
+	
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring") int PassiveScoreGain=10;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring") float PassiveScoreInterval=1.f;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring",DisplayName="Should Player gain/losse score passively") bool bPassiveScoring;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring",DisplayName="Should score go down by default") bool bScoreGoseDown;
+	
+	int SavedScore;
+	static constexpr int StartingMult=1;
+	FCurrents Currents{StartingScore,StartingMult};
 	FTimerHandle MultFade;
+	FTimerHandle ScoreInterval;
 	EMultType CurrentMultType;
 	void UpdateScore(const float& Score);
 	void OnMultFade();
+	void OnScoreInterval();
 	
 	void RestartMultFade();
 	void StopMultFade();
@@ -54,13 +67,19 @@ class ACocaineGameMode : public AGameModeBase
 	
 public:
 	virtual void BeginPlay() override;
-	virtual void OnConstruction(const FTransform& Transform) override;
 	ACocaineGameMode();
 	UFUNCTION(BlueprintCallable)
 	void AddMult(const EMultType MultType);
 private:
-	void CreateMults();
-	TMap<EMultType,float*> Mults{};	
+	const TMap<EMultType, int*> Mults{
+	{Slide,&SlideMultValue},
+		{Jump,&JumpMultValue},
+		{Kick,&KickMultValue},
+		{Dash,&DashMultValue},
+		{Grind,&GrindMultValue},
+		{Mantle,&MantleMultValue},
+		{Kill,&KillMultValue},
+	};	
 };
 
 

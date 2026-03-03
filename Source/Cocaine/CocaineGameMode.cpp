@@ -2,6 +2,11 @@
 
 #include "CocaineGameMode.h"
 
+#if 1
+#define SLOG(duration,color,text) GEngine->AddOnScreenDebugMessage(-1, duration, color, text)
+#else
+#define SLOG(duration,color,text)
+#endif
 ACocaineGameMode::ACocaineGameMode()
 {
 	// stub
@@ -10,32 +15,29 @@ ACocaineGameMode::ACocaineGameMode()
 void ACocaineGameMode::AddMult(const EMultType MultType)
 {
 	Currents.currentMult+= *Mults[MultType];
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Current Mult: %f"),Currents.currentMult));
-	UpdateScore(10.f);
+	SLOG(5.f,FColor::Red,FString::Printf(TEXT("Current Mult: %i"),Currents.currentMult));
+	UpdateScore(BaseScoreGain);
 	RestartMultFade();
 }
 
-void ACocaineGameMode::CreateMults()
-{
-	Mults.Add(EMultType::Slide,&SlideMultValue);
-	Mults.Add(EMultType::Dash,&DashMultValue);
-	Mults.Add(EMultType::Kick,&KickMultValue);
-	Mults.Add(EMultType::Jump,&JumpMultValue);
-	Mults.Add(EMultType::Grind,&GrindMultValue);
-	Mults.Add(EMultType::Mantle,&MantleMultValue);
-}
 
 void ACocaineGameMode::UpdateScore(const float& Score)
 {
 	Currents.currentScore+=Score*Currents.currentMult;
-	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("Current Score: %f"),Currents.currentScore));
+	SLOG(15.f,FColor::Red,FString::Printf(TEXT("Current Score: %i"),Currents.currentScore));
 }
 
 void ACocaineGameMode::OnMultFade()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Cleared Mult")));
-	Currents.currentMult=1.f;
+	SLOG(5.f,FColor::Red,FString::Printf(TEXT("MultFade")));
+	Currents.currentMult=StartingMult;
 	RestartMultFade();
+}
+
+void ACocaineGameMode::OnScoreInterval()
+{
+	SLOG(5.f,FColor::Green,FString::Printf(TEXT("ScoreInterval")));
+	UpdateScore(bScoreGoseDown?PassiveScoreGain:-PassiveScoreGain);
 }
 
 void ACocaineGameMode::RestartMultFade()
@@ -54,10 +56,5 @@ void ACocaineGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	GetWorld()->GetTimerManager().SetTimer(MultFade,this,&ACocaineGameMode::OnMultFade,MultFadeDuration);
-}
-
-void ACocaineGameMode::OnConstruction(const FTransform& Transform)
-{
-	Super::OnConstruction(Transform);
-	CreateMults();
+	if (bPassiveScoring) GetWorld()->GetTimerManager().SetTimer(ScoreInterval,this,&ACocaineGameMode::OnScoreInterval,PassiveScoreInterval,true);
 }

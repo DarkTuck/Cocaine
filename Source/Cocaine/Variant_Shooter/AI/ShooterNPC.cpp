@@ -155,14 +155,18 @@ void AShooterNPC::Die()
 	{
 		return;
 	}
-
+	
 	// raise the dead flag
 	bIsDead = true;
-
 	// increment the team score
+	// TODO Change it to better suit or game (scrap team score when finished testing)
 	if (AShooterGameMode* GM = Cast<AShooterGameMode>(GetWorld()->GetAuthGameMode()))
 	{
 		GM->IncrementTeamScore(TeamByte);
+		if (ACocaineGameMode* CGM = Cast<ACocaineGameMode>(GM))
+		{
+			CGM->AddMult(Kill);
+		}
 	}
 
 	// disable capsule collision

@@ -88,59 +88,59 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 		virtual FSavedMovePtr AllocateNewMove() override;
 	};
 #pragma region Prarameters
-	UPROPERTY(EditDefaultsOnly,Category="Movement") float MaxSprintSpeed=750.f;
-	UPROPERTY(EditDefaultsOnly,Category="Movement") bool bUseGravityInRootMotion=true;
-	UPROPERTY(EditDefaultsOnly,Category="Movement") bool bRootMotionDash=false;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") float MaxSprintSpeed=750.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") bool bUseGravityInRootMotion=true;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") bool bRootMotionDash=false;
 	
 	// slide
-	UPROPERTY(EditDefaultsOnly,Category="Slide") float MinSlideSpeed=400.f;
-	UPROPERTY(EditDefaultsOnly,Category="Slide") float MaxSlideSpeed=400.f;
-	UPROPERTY(EditDefaultsOnly,Category="Slide") float SlideEnterImpulse=400.f;
-	UPROPERTY(EditDefaultsOnly,Category="Slide") float SlideGravityForce=4000.f;
-	UPROPERTY(EditDefaultsOnly,Category="Slide") float SlideFrictionFactor=.06f;
-	UPROPERTY(EditDefaultsOnly,Category="Slide") float BrakingDecelerationSliding=1000.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float MinSlideSpeed=400.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float MaxSlideSpeed=400.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideEnterImpulse=400.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideGravityForce=4000.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideFrictionFactor=.06f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float BrakingDecelerationSliding=1000.f;
 	
 	// prone
-	UPROPERTY(EditDefaultsOnly,Category="Prone") float Prone_EnterHoldDuration=2.f;
-	UPROPERTY(EditDefaultsOnly,Category="Prone") float ProneSlideEnterImpulse=300.f;
-	UPROPERTY(EditDefaultsOnly,Category="Prone") float ProneMaxSpeed=300.f;
-	UPROPERTY(EditDefaultsOnly,Category="Prone") float BrakingDecelerationProning=2500.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float Prone_EnterHoldDuration=2.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneSlideEnterImpulse=300.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneMaxSpeed=300.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float BrakingDecelerationProning=2500.f;
 	
 	// Dash
-	UPROPERTY(EditDefaultsOnly,Category="Dash") float DashImpulse=1000.f;
-	UPROPERTY(EditDefaultsOnly,Category="Dash") float DashCooldownDuration=1.f;
-	UPROPERTY(EditDefaultsOnly,Category="Dash") float AuthDashCooldownDuration=.9f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float DashImpulse=1000.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float DashCooldownDuration=1.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float AuthDashCooldownDuration=.9f;
 	//Dash RootMotion
-	UPROPERTY(EditDefaultsOnly,Category="Dash") UAnimMontage* DashMontage;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash|RootMotion") UAnimMontage* DashMontage;
 	
 	// Mantle
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") float MantleMaxDistance = 200;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") float MantleReachHeight = 50;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") float MinMantleDepth= 30;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") float MantleMinWallSteepnessAngle = 75;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") float MantleMaxSurfaceAngle=40;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") float MantleMaxAlignmentAngle=45;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") float MantleMaxSpeed=10000;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") FVector MantleTargetOffset=FVector(15,0,15);
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") UAnimMontage* TallMantleMontage;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") UAnimMontage* TransitionTallMantleMontage;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") UAnimMontage* ProxyTallMantleMontage;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") UAnimMontage* ShortMantleMontage;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") UAnimMontage* TransitionShortMantleMontage;
-	UPROPERTY(EditDefaultsOnly,Category="Mantle") UAnimMontage* ProxyShortMantleMontage;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxDistance = 200;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleReachHeight = 50;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MinMantleDepth= 30;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMinWallSteepnessAngle = 75;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxSurfaceAngle=40;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxAlignmentAngle=45;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxSpeed=10000;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") FVector MantleTargetOffset=FVector(15,0,15);
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* TallMantleMontage;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* TransitionTallMantleMontage;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* ProxyTallMantleMontage;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* ShortMantleMontage;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* TransitionShortMantleMontage;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* ProxyShortMantleMontage;
 	UPROPERTY() FVector MantleTarget;
 	
 	// Grind
-	UPROPERTY(EditAnywhere,Category="Grind") float GrindDetectionRadius = 50;
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindDetectionRadius = 50;
 	float GrindDetectionRadiusSquared;
-	UPROPERTY(EditAnywhere,Category="Grind") float GrindSpeed = 100;
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindSpeed = 100;
 	UPROPERTY() FGrindState GrindState{};
 	
 	// Kick
-	UPROPERTY(EditDefaultsOnly, Category="Kick") float KickForce = 100;
-	UPROPERTY(EditDefaultsOnly, Category="Kick") float KickCooldownDuration = .5f;
-	UPROPERTY(EditDefaultsOnly, Category="kick") float AuthKickCooldownDuration = .4f;
-	UPROPERTY(EditDefaultsOnly, Category="kick") float KickRange=200.f;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|Kick") float KickForce = 100;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|Kick") float KickCooldownDuration = .5f;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float AuthKickCooldownDuration = .4f;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float KickRange=200.f;
 #pragma endregion 
 #pragma region Transient
 	UPROPERTY(Transient) ACocaineCharacter* CocaineCharacterOwner;
