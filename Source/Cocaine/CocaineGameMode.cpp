@@ -14,10 +14,31 @@ ACocaineGameMode::ACocaineGameMode()
 
 void ACocaineGameMode::AddMult(const EMultType MultType)
 {
-	Currents.currentMult+= *Mults[MultType];
+	Currents.storedMult+= *Mults[MultType];
+	if (Currents.storedMult>=MultThreshold)
+	{
+		Currents.currentMult*=2;
+		Currents.storedMult=0;
+	}
 	SLOG(5.f,FColor::Red,FString::Printf(TEXT("Current Mult: %i"),Currents.currentMult));
 	UpdateScore(BaseScoreGain);
 	RestartMultFade();
+	RestartStoredMultFade();
+}
+
+int ACocaineGameMode::GetMultValue() const
+{
+	return Currents.currentMult;
+}
+
+int ACocaineGameMode::GetStoredMultValue() const
+{
+	return Currents.storedMult;
+}
+
+int ACocaineGameMode::GetScore() const
+{
+	return Currents.currentScore;
 }
 
 
@@ -34,10 +55,15 @@ void ACocaineGameMode::OnMultFade()
 	RestartMultFade();
 }
 
+void ACocaineGameMode::OnStoredMultFade()
+{
+	Currents.storedMult-=Currents.storedMult>0?1:0;
+}
+
 void ACocaineGameMode::OnScoreInterval()
 {
 	SLOG(5.f,FColor::Green,FString::Printf(TEXT("ScoreInterval")));
-	UpdateScore(bScoreGoseDown?PassiveScoreGain:-PassiveScoreGain);
+	UpdateScore(bScoreGoseDown?-PassiveScoreGain:PassiveScoreGain);
 }
 
 void ACocaineGameMode::RestartMultFade()
@@ -45,6 +71,14 @@ void ACocaineGameMode::RestartMultFade()
 	FTimerManager* TimerManager{(&GetWorld()->GetTimerManager())};
 	TimerManager->ClearTimer(MultFade);
 	TimerManager->SetTimer(MultFade,this,&ACocaineGameMode::OnMultFade,MultFadeDuration);
+}
+
+void ACocaineGameMode::RestartStoredMultFade()
+{
+	FTimerManager* TimerManager{(&GetWorld()->GetTimerManager())};
+	TimerManager->ClearTimer(StoredMultFade);
+	TimerManager->SetTimer(StoredMultFade,this,&ACocaineGameMode::OnStoredMultFade,StoredMultFadeDuration);
+	
 }
 
 void ACocaineGameMode::StopMultFade()

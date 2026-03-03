@@ -28,6 +28,7 @@ struct FCurrents
 	GENERATED_BODY()
 	int currentScore;
 	int currentMult;
+	int storedMult;
 };
 
 UCLASS(abstract)
@@ -41,10 +42,12 @@ class ACocaineGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrindMultValue=2;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int MantleMultValue=2;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KillMultValue=2;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") float MultFadeDuration=5;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int MultThreshold=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float MultFadeDuration=5;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float StoredMultFadeDuration=2.5f;
 	
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System") int StartingScore=0;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System") int BaseScoreGain=10;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System") int BaseScoreGain=10;
 	
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring") int PassiveScoreGain=10;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring") float PassiveScoreInterval=1.f;
@@ -55,13 +58,17 @@ class ACocaineGameMode : public AGameModeBase
 	static constexpr int StartingMult=1;
 	FCurrents Currents{StartingScore,StartingMult};
 	FTimerHandle MultFade;
+	FTimerHandle StoredMultFade;
 	FTimerHandle ScoreInterval;
 	EMultType CurrentMultType;
 	void UpdateScore(const float& Score);
+	
 	void OnMultFade();
+	void OnStoredMultFade();
 	void OnScoreInterval();
 	
 	void RestartMultFade();
+	void RestartStoredMultFade();
 	void StopMultFade();
 
 	
@@ -70,6 +77,12 @@ public:
 	ACocaineGameMode();
 	UFUNCTION(BlueprintCallable)
 	void AddMult(const EMultType MultType);
+	UFUNCTION(BlueprintCallable)
+	int GetMultValue() const;
+	UFUNCTION(BlueprintCallable)
+	int GetStoredMultValue() const;
+	UFUNCTION(BlueprintCallable)
+	int GetScore() const;
 private:
 	const TMap<EMultType, int*> Mults{
 	{Slide,&SlideMultValue},
