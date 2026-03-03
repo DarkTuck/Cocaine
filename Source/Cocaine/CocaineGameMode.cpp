@@ -9,7 +9,7 @@ ACocaineGameMode::ACocaineGameMode()
 
 void ACocaineGameMode::AddMult(const EMultType MultType)
 {
-	Currents.currentMult+=Mults[MultType];
+	Currents.currentMult+= *Mults[MultType];
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Current Mult: %f"),Currents.currentMult));
 	UpdateScore(10.f);
 	RestartMultFade();
@@ -17,12 +17,12 @@ void ACocaineGameMode::AddMult(const EMultType MultType)
 
 void ACocaineGameMode::CreateMults()
 {
-	Mults.Add(EMultType::Slide,SlideMultValue);
-	Mults.Add(EMultType::Dash,DashMultValue);
-	Mults.Add(EMultType::Kick,KickMultValue);
-	Mults.Add(EMultType::Jump,JumpMultValue);
-	Mults.Add(EMultType::Grind,GrindMultValue);
-	Mults.Add(EMultType::Mantle,MantleMultValue);
+	Mults.Add(EMultType::Slide,&SlideMultValue);
+	Mults.Add(EMultType::Dash,&DashMultValue);
+	Mults.Add(EMultType::Kick,&KickMultValue);
+	Mults.Add(EMultType::Jump,&JumpMultValue);
+	Mults.Add(EMultType::Grind,&GrindMultValue);
+	Mults.Add(EMultType::Mantle,&MantleMultValue);
 }
 
 void ACocaineGameMode::UpdateScore(const float& Score)
@@ -40,9 +40,9 @@ void ACocaineGameMode::OnMultFade()
 
 void ACocaineGameMode::RestartMultFade()
 {
-	FTimerManager& TimerManager{GetWorld()->GetTimerManager()};
-	TimerManager.ClearTimer(MultFade);
-	TimerManager.SetTimer(MultFade,this,&ACocaineGameMode::OnMultFade,MultFadeDuration);
+	FTimerManager* TimerManager{(&GetWorld()->GetTimerManager())};
+	TimerManager->ClearTimer(MultFade);
+	TimerManager->SetTimer(MultFade,this,&ACocaineGameMode::OnMultFade,MultFadeDuration);
 }
 
 void ACocaineGameMode::StopMultFade()

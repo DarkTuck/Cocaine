@@ -60,7 +60,7 @@ public:
 	void AddMult(const EMultType MultType);
 private:
 	void CreateMults();
-	TMap<EMultType,float> Mults{};	
+	TMap<EMultType,float*> Mults{};	
 };
 
 
