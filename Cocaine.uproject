@@ -11,8 +11,7 @@
 			"AdditionalDependencies": [
 				"Engine",
 				"AIModule",
-				"UMG",
-				"GeometryScriptingEditor"
+				"UMG"
 			]
 		}
 	],
@@ -34,6 +33,11 @@
 		},
 		{
 			"Name": "GeometryScripting",
+			"Enabled": true
+		}
+		,
+		{
+			"Name": "GeometryProcessing",
 			"Enabled": true
 		}
 	]

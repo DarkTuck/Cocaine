@@ -26,11 +26,17 @@ void AGrindingRail::OnConstruction(const FTransform& Transform)
 		Spline->AttachToComponent(RootComponent,FAttachmentTransformRules::KeepRelativeTransform);
 		Spline->bEditableWhenInherited = true;
 	}
+	RebuildMesh();
 }
 
-void AGrindingRail::RebuildGeneratedMesh(UDynamicMesh* TargetMesh)
+void AGrindingRail::RebuildMesh()
 {
-	Super::RebuildGeneratedMesh(TargetMesh);
+	UDynamicMeshComponent* MeshComponent = Cast<UDynamicMeshComponent>(GetComponentByClass(UDynamicMeshComponent::StaticClass()));
+	if (!MeshComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No DynamicMeshComponent found"));
+		return;
+	}
 	const FVector2D Center(0,0);
 	
 	Brush=UGeometryScriptLibrary_PolyPathFunctions::CreateCirclePath2D(Center,Radius,Roundness);
@@ -48,12 +54,15 @@ void AGrindingRail::RebuildGeneratedMesh(UDynamicMesh* TargetMesh)
 	UGeometryScriptLibrary_PolyPathFunctions::SampleSplineToTransforms(HelperSpline,Frames,FrameTimes,SamplingOptions,Transform);
 
 	constexpr FGeometryScriptPrimitiveOptions Options{};
+
+	UDynamicMesh* Mesh = MeshComponent->GetDynamicMesh();
+	Mesh->Reset();
 	
-	
-	UGeometryScriptLibrary_MeshPrimitiveFunctions::AppendSweepPolygon(TargetMesh,
+	UGeometryScriptLibrary_MeshPrimitiveFunctions::AppendSweepPolygon(Mesh,
 		Options,
 		Transform,
 		UGeometryScriptLibrary_PolyPathFunctions::Conv_GeometryScriptPolyPathToArrayOfVector2D(Brush),
 		Frames);
 	HelperSpline->DestroyComponent();
+	MeshComponent->MarkRenderStateDirty();
 }

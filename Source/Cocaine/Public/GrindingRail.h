@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/SplineComponent.h"
-#include "GeometryActors/GeneratedDynamicMeshActor.h"
+#include "DynamicMeshActor.h"
 #include "GeometryScript/GeometryScriptTypes.h"
 #include "GrindingRail.generated.h"
 
@@ -13,12 +13,12 @@
  * 
  */
 UCLASS(BlueprintType)
-class COCAINE_API AGrindingRail : public AGeneratedDynamicMeshActor
+class COCAINE_API AGrindingRail : public ADynamicMeshActor
 {
 	GENERATED_BODY()
 	AGrindingRail();
 	virtual void OnConstruction(const FTransform& Transform) override;
-	virtual void RebuildGeneratedMesh(UDynamicMesh* TargetMesh) override;
+	void RebuildMesh();
 	FGeometryScriptPolyPath Brush{};
 public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Spline") USplineComponent* Spline;
