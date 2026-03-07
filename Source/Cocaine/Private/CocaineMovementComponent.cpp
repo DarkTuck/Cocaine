@@ -1355,7 +1355,7 @@ void UCocaineMovementComponent::PerformKick()
 	CocaineCharacterOwner->LaunchCharacter(KickDirection,true,true);
 	
 	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Kick);
-	SetMovementMode(MOVE_Flying);
+	SetMovementMode(MOVE_Falling);
 	
 	
 }
