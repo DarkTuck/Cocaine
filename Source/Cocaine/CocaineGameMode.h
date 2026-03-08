@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "MultSystemUI.h"
-#include "Containers/CircularQueue.h"
 #include "GameFramework/GameModeBase.h"
 #include "CocaineGameMode.generated.h"
 
@@ -25,6 +24,8 @@ enum EMultType
 	Mantle,
 	Kill
 };
+
+
 USTRUCT()
 struct FCurrents
 {
@@ -32,6 +33,8 @@ struct FCurrents
 	int currentScore;
 	int currentMult;
 	int storedMult;
+	
+	// UPROPERTY(EditAnywhere, Category = "Scoring|Mult System") int32 MultHistoryLimit = 3;
 };
 
 UCLASS(abstract)
@@ -67,6 +70,10 @@ class ACocaineGameMode : public AGameModeBase
 	FTimerHandle StoredMultFade;
 	FTimerHandle ScoreInterval;
 	EMultType CurrentMultType;
+	
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System") int MultHistoryLimit=3;
+	TArray<EMultType> MultHistory={Kick,Kick,Kick};
+	
 	void UpdateScore(const float& Score);
 	
 	//void OnMultFade();
@@ -80,6 +87,7 @@ class ACocaineGameMode : public AGameModeBase
 	
 public:
 	virtual void BeginPlay() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
 	ACocaineGameMode();
 	UFUNCTION(BlueprintCallable)
 	void AddMult(const EMultType MultType);
@@ -89,8 +97,12 @@ public:
 	int GetStoredMultValue() const;
 	UFUNCTION(BlueprintCallable)
 	int GetScore() const;
+
 private:
 	
+	void AddToHistory(const EMultType MultType);
+	
+	bool CanAddMult(const EMultType MultType) const;
 	const TMap<EMultType, int*> Mults{
 	{Slide,&SlideMultValue},
 		{Jump,&JumpMultValue},
@@ -108,6 +120,7 @@ private:
 			{Grind,"Grind"},
 			{Mantle,"Mantle"},
 			{Kill, "Kill"},
+				{Empty, "Empty"}
 	};
 	FORCEINLINE FString ReturnMultString(const EMultType MultType) const{return MultString[MultType];};
 };

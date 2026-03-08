@@ -17,9 +17,11 @@ ACocaineGameMode::ACocaineGameMode()
 
 void ACocaineGameMode::AddMult(const EMultType MultType)
 {
+	if (!CanAddMult(MultType)) return;
 	Currents.storedMult+= *Mults[MultType];
 	UIWidget->BP_UpdateLastAction(ReturnMultString(MultType));
 	UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
+	AddToHistory(MultType);
 	if (Currents.storedMult>=MultThreshold)
 	{
 		Currents.currentMult+=1;
@@ -48,6 +50,35 @@ int ACocaineGameMode::GetScore() const
 	return Currents.currentScore;
 }
 
+void ACocaineGameMode::AddToHistory(const EMultType MultType)
+{
+	MultHistory.Add(MultType);
+	MultHistory.RemoveAt(MultHistory.Num()-1);
+	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Emerald,FString::Printf(TEXT("MultHistory Size %i"),MultHistory.Num()));
+}
+
+bool ACocaineGameMode::CanAddMult(const EMultType MultType) const
+{
+	
+	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,FString::Printf(TEXT("MultHistory Size %i"),MultHistory.Num()));
+	for (const EMultType Historic : MultHistory)
+	{
+		GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Purple,ReturnMultString(MultType)+" Current");
+     	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Purple,ReturnMultString(Historic)+" Historic");
+		if (ReturnMultString(Historic)==ReturnMultString(MultType))
+		{	
+			
+			GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,"Did not added mult");
+			return false;
+		}
+	}
+	
+	
+	
+	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,"added mult");
+	return true;
+}
+
 
 void ACocaineGameMode::UpdateScore(const float& Score)
 {
@@ -70,7 +101,7 @@ void ACocaineGameMode::OnStoredMultFade()
 	UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
 	if (Currents.storedMult<=0)
 	{
-		Currents.currentMult-=Currents.currentMult>0?1:0;
+		Currents.currentMult-=Currents.currentMult>1?1:0;
 		Currents.storedMult=MultThreshold;
 		UIWidget->BP_UpdateMult(Currents.currentMult);
 		UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
@@ -112,6 +143,9 @@ void ACocaineGameMode::BeginPlay()
 	if (bPassiveScoring) GetWorld()->GetTimerManager().SetTimer(ScoreInterval,this,&ACocaineGameMode::OnScoreInterval,PassiveScoreInterval,true);
 	UIWidget = CreateWidget<UMultSystemUI>(GetWorld()->GetFirstPlayerController(),UIWidgetClass);
 	UIWidget->AddToViewport();
-	
-	MultQueue.
+}
+
+void ACocaineGameMode::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
 }
