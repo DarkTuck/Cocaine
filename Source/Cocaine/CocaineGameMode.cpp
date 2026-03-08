@@ -143,9 +143,14 @@ void ACocaineGameMode::BeginPlay()
 	if (bPassiveScoring) GetWorld()->GetTimerManager().SetTimer(ScoreInterval,this,&ACocaineGameMode::OnScoreInterval,PassiveScoreInterval,true);
 	UIWidget = CreateWidget<UMultSystemUI>(GetWorld()->GetFirstPlayerController(),UIWidgetClass);
 	UIWidget->AddToViewport();
+<<<<<<< Updated upstream
 }
 
 void ACocaineGameMode::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
+=======
+	
+	
+>>>>>>> Stashed changes
 }
