@@ -30,12 +30,15 @@ void ACocaineGameMode::OnStoredMultFade()
 {
 	Currents.storedMult-=Currents.storedMult>0?1:0;
 	UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
+	if (Currents.currentMult<=1)
+	{
+		RestartStoredMultFade();
+		return;
+	}
 	if (Currents.storedMult<=0)
 	{
 		Currents.currentMult-=Currents.currentMult>1?1:0;
 		Currents.storedMult=MultThreshold;
-		UIWidget->BP_UpdateMult(Currents.currentMult);
-		UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
 	}
 	RestartStoredMultFade();
 }
