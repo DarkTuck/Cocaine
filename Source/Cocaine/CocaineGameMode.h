@@ -72,7 +72,7 @@ class ACocaineGameMode : public AGameModeBase
 	EMultType CurrentMultType;
 	
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System") int MultHistoryLimit=3;
-	TArray<EMultType> MultHistory={Kick,Kick,Kick};
+	TArray<EMultType> MultHistory={Empty,Empty,Empty};
 	
 	void UpdateScore(const float& Score);
 	
@@ -100,7 +100,8 @@ public:
 
 private:
 	
-	void AddToHistory(const EMultType MultType);
+	void AddToHistory(const EMultType& MultType);
+	void AddToDisplayedHistory();
 	
 	bool CanAddMult(const EMultType MultType) const;
 	const TMap<EMultType, int*> Mults{

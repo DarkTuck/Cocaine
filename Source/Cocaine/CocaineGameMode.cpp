@@ -10,82 +10,13 @@
 #else
 #define STLOG(duration,color,text)
 #endif
-ACocaineGameMode::ACocaineGameMode()
-{
-	// stub
-}
-
-void ACocaineGameMode::AddMult(const EMultType MultType)
-{
-	if (!CanAddMult(MultType)) return;
-	Currents.storedMult+= *Mults[MultType];
-	UIWidget->BP_UpdateLastAction(ReturnMultString(MultType));
-	UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
-	AddToHistory(MultType);
-	if (Currents.storedMult>=MultThreshold)
-	{
-		Currents.currentMult+=1;
-		UIWidget->BP_UpdateMult(Currents.currentMult);
-		Currents.storedMult=0;
-		UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
-	}
-	STLOG(5.f,FColor::Red,FString::Printf(TEXT("Current Mult: %i"),Currents.currentMult));
-	UpdateScore(BaseScoreGain);
-	//RestartMultFade();
-	RestartStoredMultFade();
-}
-
-int ACocaineGameMode::GetMultValue() const
-{
-	return Currents.currentMult;
-}
-
-int ACocaineGameMode::GetStoredMultValue() const
-{
-	return Currents.storedMult;
-}
-
-int ACocaineGameMode::GetScore() const
-{
-	return Currents.currentScore;
-}
-
-void ACocaineGameMode::AddToHistory(const EMultType MultType)
-{
-	MultHistory.Add(MultType);
-	MultHistory.RemoveAt(MultHistory.Num()-1);
-	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Emerald,FString::Printf(TEXT("MultHistory Size %i"),MultHistory.Num()));
-}
-
-bool ACocaineGameMode::CanAddMult(const EMultType MultType) const
-{
-	
-	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,FString::Printf(TEXT("MultHistory Size %i"),MultHistory.Num()));
-	for (const EMultType Historic : MultHistory)
-	{
-		GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Purple,ReturnMultString(MultType)+" Current");
-     	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Purple,ReturnMultString(Historic)+" Historic");
-		if (ReturnMultString(Historic)==ReturnMultString(MultType))
-		{	
-			
-			GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,"Did not added mult");
-			return false;
-		}
-	}
-	
-	
-	
-	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,"added mult");
-	return true;
-}
-
-
 void ACocaineGameMode::UpdateScore(const float& Score)
 {
 	Currents.currentScore+=Score*Currents.currentMult;
 	STLOG(15.f,FColor::Red,FString::Printf(TEXT("Current Score: %i"),Currents.currentScore));
 	UIWidget->BP_UpdateScore(Currents.currentScore);
 }
+
 /*
 void ACocaineGameMode::OnMultFade()
 {
@@ -114,6 +45,7 @@ void ACocaineGameMode::OnScoreInterval()
 	STLOG(5.f,FColor::Green,FString::Printf(TEXT("ScoreInterval")));
 	UpdateScore(bScoreGoseDown?-PassiveScoreGain:PassiveScoreGain);
 }
+
 /*
 void ACocaineGameMode::RestartMultFade()
 {
@@ -129,6 +61,7 @@ void ACocaineGameMode::RestartStoredMultFade()
 	TimerManager->SetTimer(StoredMultFade,this,&ACocaineGameMode::OnStoredMultFade,StoredMultFadeDuration);
 	
 }
+
 /*
 void ACocaineGameMode::StopMultFade()
 {
@@ -149,4 +82,81 @@ void ACocaineGameMode::BeginPlay()
 void ACocaineGameMode::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
+}
+
+ACocaineGameMode::ACocaineGameMode()
+{
+	// stub
+}
+
+void ACocaineGameMode::AddMult(const EMultType MultType)
+{
+	AddToHistory(MultType);
+	if (!CanAddMult(MultType)) return;
+	Currents.storedMult+= *Mults[MultType];
+	UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
+	if (Currents.storedMult>=MultThreshold)
+	{
+		Currents.currentMult+=1;
+		UIWidget->BP_UpdateMult(Currents.currentMult);
+		Currents.storedMult=0;
+		UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
+	}
+	STLOG(5.f,FColor::Red,FString::Printf(TEXT("Current Mult: %i"),Currents.currentMult));
+	UpdateScore(BaseScoreGain);
+	//RestartMultFade();
+	RestartStoredMultFade();
+}
+
+
+int ACocaineGameMode::GetMultValue() const
+{
+	return Currents.currentMult;
+}
+int ACocaineGameMode::GetStoredMultValue() const
+{
+	return Currents.storedMult;
+}
+
+int ACocaineGameMode::GetScore() const
+{
+	return Currents.currentScore;
+}
+void ACocaineGameMode::AddToHistory(const EMultType& MultType)
+{
+	MultHistory.Emplace(MultType);
+	MultHistory.RemoveAt(0);
+	AddToDisplayedHistory();
+	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Emerald,FString::Printf(TEXT("MultHistory Size %i"),MultHistory.Num()));
+}
+void ACocaineGameMode::AddToDisplayedHistory()
+{
+	FString ReturnString{};
+	for (const EMultType Historic : MultHistory)
+	{
+		if (Historic==Empty) continue;
+		ReturnString+=ReturnMultString(Historic)+"\n";
+	}
+	UIWidget->BP_UpdateLastAction(ReturnString);
+}
+
+bool ACocaineGameMode::CanAddMult(const EMultType MultType) const
+{
+	
+	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,FString::Printf(TEXT("MultHistory Size %i"),MultHistory.Num()));
+	for (const EMultType Historic : MultHistory)
+	{
+		GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Purple,ReturnMultString(MultType)+" Current");
+		GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Purple,ReturnMultString(Historic)+" Historic");
+		if (ReturnMultString(Historic)==ReturnMultString(MultType))
+		{	
+			
+			GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,"Did not added mult");
+			return false;
+		}
+	}
+	
+	
+	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,"added mult");
+	return true;
 }
