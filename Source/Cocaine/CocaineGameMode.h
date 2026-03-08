@@ -103,7 +103,7 @@ private:
 	void AddToHistory(const EMultType& MultType);
 	void AddToDisplayedHistory();
 	
-	bool CanAddMult(const EMultType MultType) const;
+	bool CanAddMult(const EMultType MultType);
 	const TMap<EMultType, int*> Mults{
 	{Slide,&SlideMultValue},
 		{Jump,&JumpMultValue},
