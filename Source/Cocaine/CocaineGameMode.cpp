@@ -126,7 +126,6 @@ void ACocaineGameMode::AddToHistory(const EMultType& MultType)
 	MultHistory.Emplace(MultType);
 	MultHistory.RemoveAt(0);
 	AddToDisplayedHistory();
-	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Emerald,FString::Printf(TEXT("MultHistory Size %i"),MultHistory.Num()));
 }
 void ACocaineGameMode::AddToDisplayedHistory()
 {
@@ -141,21 +140,14 @@ void ACocaineGameMode::AddToDisplayedHistory()
 
 bool ACocaineGameMode::CanAddMult(const EMultType MultType)
 {
-	
-	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,FString::Printf(TEXT("MultHistory Size %i"),MultHistory.Num()));
 	for (const EMultType Historic : MultHistory)
 	{
-		GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Purple,ReturnMultString(MultType)+" Current");
-		GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Purple,ReturnMultString(Historic)+" Historic");
 		if (ReturnMultString(Historic)==ReturnMultString(MultType))
 		{
 			AddToHistory(MultType);
-			GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,"Did not added mult");
 			return false;
 		}
 	}
 	AddToHistory(MultType);
-	
-	GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Blue,"added mult");
-	return true;
+		return true;
 }
