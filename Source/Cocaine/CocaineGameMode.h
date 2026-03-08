@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MultSystemUI.h"
+#include "Containers/CircularQueue.h"
 #include "GameFramework/GameModeBase.h"
 #include "CocaineGameMode.generated.h"
 
@@ -14,6 +16,7 @@
 UENUM()
 enum EMultType
 {
+	Empty,
 	Slide,
 	Jump,
 	Kick,
@@ -54,22 +57,25 @@ class ACocaineGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring",DisplayName="Should Player gain/losse score passively") bool bPassiveScoring;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring",DisplayName="Should score go down by default") bool bScoreGoseDown;
 	
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|UI") TSubclassOf<UMultSystemUI> UIWidgetClass;
+	TObjectPtr<UMultSystemUI> UIWidget;
+	
 	int SavedScore;
 	static constexpr int StartingMult=1;
 	FCurrents Currents{StartingScore,StartingMult};
-	FTimerHandle MultFade;
+	//FTimerHandle MultFade;
 	FTimerHandle StoredMultFade;
 	FTimerHandle ScoreInterval;
 	EMultType CurrentMultType;
 	void UpdateScore(const float& Score);
 	
-	void OnMultFade();
+	//void OnMultFade();
 	void OnStoredMultFade();
 	void OnScoreInterval();
 	
-	void RestartMultFade();
+	//void RestartMultFade();
 	void RestartStoredMultFade();
-	void StopMultFade();
+	//void StopMultFade();
 
 	
 public:
@@ -84,6 +90,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	int GetScore() const;
 private:
+	
 	const TMap<EMultType, int*> Mults{
 	{Slide,&SlideMultValue},
 		{Jump,&JumpMultValue},
@@ -92,7 +99,17 @@ private:
 		{Grind,&GrindMultValue},
 		{Mantle,&MantleMultValue},
 		{Kill,&KillMultValue},
-	};	
+	};
+	const  TMap<EMultType, FString> MultString{
+			{Slide,"Slide"},
+			{Jump,"Jump"},
+			{Kick,"Kick"},
+			{Dash,"Dash"},
+			{Grind,"Grind"},
+			{Mantle,"Mantle"},
+			{Kill, "Kill"},
+	};
+	FORCEINLINE FString ReturnMultString(const EMultType MultType) const{return MultString[MultType];};
 };
 
 

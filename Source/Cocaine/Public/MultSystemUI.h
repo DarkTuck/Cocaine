@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CocaineGameMode.h"
 #include "Blueprint/UserWidget.h"
 #include "MultSystemUI.generated.h"
 
@@ -11,17 +10,17 @@
  * 
  */
 UCLASS()
-class COCAINE_API UMultSystemUI : public UUserWidget
+class COCAINE_API  UMultSystemUI : public UUserWidget
 {
 public:
 	UFUNCTION(BlueprintImplementableEvent, Category="MultSystem")
-	void BP_UpdateScore(int score);
+	void BP_UpdateScore(const int score);
 	UFUNCTION(BlueprintImplementableEvent, Category="MultSystem")
-	void BP_UpdateMult(int mult);
+	void BP_UpdateMult(const int mult);
 	UFUNCTION(BlueprintImplementableEvent, Category="MultSystem")
-	void BP_UpdateStoredMult(int storedMult);
+	void BP_UpdateStoredMult(const float storedMult);
 	UFUNCTION(BlueprintImplementableEvent, Category="MultSystem")
-	void BP_UpdateLastAction(EMultType multType);
+	void BP_UpdateLastAction(const FString& Action);
 	
 	GENERATED_BODY()
 };
