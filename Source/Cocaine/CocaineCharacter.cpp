@@ -11,6 +11,7 @@
 #include "Cocaine.h"
 #include "Public/CocaineMovementComponent.h"
 #include "CableComponent.h"
+#include "CocaineGameMode.h"
 
 ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer.SetDefaultSubobjectClass<UCocaineMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -142,6 +143,7 @@ void ACocaineCharacter::Interact()
 	if (const bool bHasHit {GetWorld()->SweepSingleByChannel(Hit,Start,End,FQuat::Identity,ECC_GameTraceChannel2,FCollisionShape::MakeSphere(100.f))})
 	{
 		bIsGrappling=true;
+		Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Grapple);
 		GetCocaineCharacterMovement()->SetFlying(true);
 		GrappleCable->SetVisibility(true);
 		GrapplingPoint=Hit.ImpactPoint;

@@ -22,7 +22,8 @@ enum EMultType
 	Dash,
 	Grind,
 	Mantle,
-	Kill
+	Kill,
+	Grapple
 };
 
 
@@ -48,7 +49,8 @@ class ACocaineGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrindMultValue=2;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int MantleMultValue=2;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KillMultValue=2;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int MultThreshold=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrappleMultValue=2;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int MultThreshold=3;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float MultFadeDuration=5;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float StoredMultFadeDuration=2.5f;
 	
@@ -112,16 +114,18 @@ private:
 		{Grind,&GrindMultValue},
 		{Mantle,&MantleMultValue},
 		{Kill,&KillMultValue},
+		{Grapple,&GrappleMultValue},
 	};
 	const  TMap<EMultType, FString> MultString{
-			{Slide,"Slide"},
-			{Jump,"Jump"},
-			{Kick,"Kick"},
-			{Dash,"Dash"},
-			{Grind,"Grind"},
-			{Mantle,"Mantle"},
-			{Kill, "Kill"},
-				{Empty, "Empty"}
+		{Slide,"Slide"},
+		{Jump,"Jump"},
+		{Kick,"Kick"},
+		{Dash,"Dash"},
+		{Grind,"Grind"},
+		{Mantle,"Mantle"},
+		{Kill, "Kill"},
+		{Empty, "Empty"},
+		{Grapple,"Grapple"}
 	};
 	FORCEINLINE FString ReturnMultString(const EMultType MultType) const{return MultString[MultType];};
 };
