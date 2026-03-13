@@ -56,6 +56,7 @@ class ACocaineGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int MantleMultValue=20;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KillMultValue=20;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrappleMultValue=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int BaseStoredMultDrainValue=10;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int MultThreshold=100;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float MultFadeDuration=5;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float StoredMultFadeDuration=2.5f;
@@ -101,7 +102,7 @@ class ACocaineGameMode : public AGameModeBase
 	
 	//void RestartMultFade();
 	void RestartStoredMultFade();
-	//void StopMultFade();
+	void StopStoredMultFade();
 
 	
 public:
@@ -125,7 +126,7 @@ private:
 	void AddToHistory(const EMultType& MultType);
 	void AddToDisplayedHistory();
 	
-	void DrainMult();
+	void DrainMult(const int DrainValue);
 	bool CanDrainMult() const;
 	
 	bool CanAddMult(const EMultType MultType);

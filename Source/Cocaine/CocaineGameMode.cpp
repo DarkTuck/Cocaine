@@ -29,20 +29,7 @@ void ACocaineGameMode::OnMultFade()
 */
 void ACocaineGameMode::OnStoredMultFade()
 {
-	Currents.storedMult-=Currents.storedMult>0?1:0;
-	UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
-	if (Currents.currentMult<=MinCurrentMult)
-	{
-		RestartStoredMultFade();
-		return;
-	}
-	if (Currents.storedMult<=MinStoredMult)
-	{
-		Currents.currentMult-=Currents.currentMult>1?1:0;
-		Currents.storedMult=MultThreshold;
-		UIWidget->BP_UpdateMult(Currents.currentMult);
-		UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
-	}
+	DrainMult(BaseStoredMultDrainValue);
 	RestartStoredMultFade();
 }
 
@@ -54,7 +41,7 @@ void ACocaineGameMode::OnScoreInterval()
 
 void ACocaineGameMode::OnSlowMoDrain()
 {
-	CanDrainMult()?DrainMult():StopSlowMo();
+	CanDrainMult()?DrainMult(SlowMoCost):StopSlowMo();
 }
 
 /*
@@ -73,12 +60,12 @@ void ACocaineGameMode::RestartStoredMultFade()
 	
 }
 
-/*
-void ACocaineGameMode::StopMultFade()
+
+void ACocaineGameMode::StopStoredMultFade()
 {
-	GetWorld()->GetTimerManager().ClearTimer(MultFade);
+	GetWorld()->GetTimerManager().ClearTimer(StoredMultFade);
 }
-*/
+
 void ACocaineGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -136,6 +123,7 @@ int ACocaineGameMode::GetScore() const
 void ACocaineGameMode::StartSlowMo()
 {
 	if (!CanDrainMult()) return;
+	StopStoredMultFade();
 	bIsSlowMo=true;
 	const UWorld* World = GetWorld();
 	World->GetTimerManager().SetTimer(SlowMoDrainTimer,this,&ACocaineGameMode::OnSlowMoDrain,SlowMoDrainInterval,true);
@@ -145,6 +133,7 @@ void ACocaineGameMode::StartSlowMo()
 void ACocaineGameMode::StopSlowMo()
 {
 	bIsSlowMo=false;
+	RestartStoredMultFade();
 	const UWorld* World = GetWorld();
 	World->GetTimerManager().ClearTimer(SlowMoDrainTimer);
 	UGameplayStatics::SetGlobalTimeDilation(World,1);
@@ -167,10 +156,10 @@ void ACocaineGameMode::AddToDisplayedHistory()
 	UIWidget->BP_UpdateLastAction(ReturnString);
 }
 
-void ACocaineGameMode::DrainMult()
+void ACocaineGameMode::DrainMult(const int DrainValue)
 {
 	STLOG(1.f,FColor::Blue,"drain");
-	Currents.storedMult-=SlowMoCost;
+	Currents.storedMult-=DrainValue;
 //	if (Currents.currentMult<MinCurrentMult) return;
 	if (Currents.storedMult<=MinStoredMult&&Currents.currentMult!=MinCurrentMult)
 	{
