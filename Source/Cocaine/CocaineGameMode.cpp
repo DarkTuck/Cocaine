@@ -4,6 +4,7 @@
 
 #include "MultSystemUI.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 #if 0
 #define STLOG(duration,color,text) GEngine->AddOnScreenDebugMessage(-1, duration, color, text)
@@ -49,6 +50,12 @@ void ACocaineGameMode::OnScoreInterval()
 {
 	STLOG(5.f,FColor::Green,FString::Printf(TEXT("ScoreInterval")));
 	UpdateScore(bScoreGoseDown?-PassiveScoreGain:PassiveScoreGain);
+}
+
+void ACocaineGameMode::OnSlowMoDrain()
+{
+	Currents.storedMult-=SlowMoCost;
+	if (Currents.storedMult<=0) StopSlowMo();
 }
 
 /*
@@ -126,6 +133,22 @@ int ACocaineGameMode::GetScore() const
 {
 	return Currents.currentScore;
 }
+
+void ACocaineGameMode::StartSlowMo()
+{
+	if (Currents.storedMult<=0) return;
+	const UWorld* World = GetWorld();
+	World->GetTimerManager().SetTimer(SlowMoDrainTimer,this,&ACocaineGameMode::OnSlowMoDrain,SlowMoDrainInterval,true);
+	UGameplayStatics::SetGlobalTimeDilation(World,TimeScale);
+}
+
+void ACocaineGameMode::StopSlowMo()
+{
+	const UWorld* World = GetWorld();
+	World->GetTimerManager().ClearTimer(SlowMoDrainTimer);
+	UGameplayStatics::SetGlobalTimeDilation(World,1);
+}
+
 void ACocaineGameMode::AddToHistory(const EMultType& MultType)
 {
 	MultHistory.Emplace(MultType);

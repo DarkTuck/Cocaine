@@ -84,6 +84,10 @@ void ACocaineCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ACocaineCharacter::LookInput);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ACocaineCharacter::LookInput);
 		
+		// SlowMo
+		EnhancedInputComponent->BindAction(SlowMoAction, ETriggerEvent::Started,this,&ACocaineCharacter::SlowMo);
+		EnhancedInputComponent->BindAction(SlowMoAction, ETriggerEvent::Completed,this,&ACocaineCharacter::StopSlowMo);
+		
 		// Interact
 		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Triggered,this,&ACocaineCharacter::Interact);
 		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Completed,this,&ACocaineCharacter::StopInteract);
@@ -108,6 +112,12 @@ void ACocaineCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	{
 		UE_LOG(LogCocaine, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
+}
+
+void ACocaineCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	CocaineGameMode=Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode());
 }
 
 void ACocaineCharacter::Tick(float DeltaSeconds)
@@ -197,6 +207,16 @@ void ACocaineCharacter::Dash()
 void ACocaineCharacter::StopDash()
 {
 	GetCocaineCharacterMovement()->DashReleased();
+}
+
+void ACocaineCharacter::SlowMo()
+{
+	CocaineGameMode->StartSlowMo();	
+}
+
+void ACocaineCharacter::StopSlowMo()
+{
+	CocaineGameMode->StopSlowMo();
 }
 
 

@@ -9,6 +9,12 @@
 
 /**
  *  Simple GameMode for a first person game
+ *  
+ *  Thank you, Epic Games developers who made First-Person Shooter template
+ *  for kindly putting ui scoring logic in GameMode, which made me think It's the appropriate class
+ *  for that kind of logic. Well It was until I learned its server's class.
+ *  It changes nothing for now as this will be singleplayer game,
+ *  but it will need to be changed if we want to add multiplayer mode
  */
 
 
@@ -62,6 +68,11 @@ class ACocaineGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring",DisplayName="Should Player gain/losse score passively") bool bPassiveScoring;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring",DisplayName="Should score go down by default") bool bScoreGoseDown;
 	
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|SlowMo",meta=(ClampMin=0,ClampMax=1)) float TimeScale=.5f;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|SlowMo") int SlowMoCost=1;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|SlowMo") float SlowMoDrainInterval=1.f;
+	
+	
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|UI") TSubclassOf<UMultSystemUI> UIWidgetClass;
 	TObjectPtr<UMultSystemUI> UIWidget;
 	
@@ -71,6 +82,7 @@ class ACocaineGameMode : public AGameModeBase
 	//FTimerHandle MultFade;
 	FTimerHandle StoredMultFade;
 	FTimerHandle ScoreInterval;
+	FTimerHandle SlowMoDrainTimer;
 	EMultType CurrentMultType;
 	
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System") int MultHistoryLimit=3;
@@ -81,6 +93,7 @@ class ACocaineGameMode : public AGameModeBase
 	//void OnMultFade();
 	void OnStoredMultFade();
 	void OnScoreInterval();
+	void OnSlowMoDrain();
 	
 	//void RestartMultFade();
 	void RestartStoredMultFade();
@@ -99,6 +112,9 @@ public:
 	int GetStoredMultValue() const;
 	UFUNCTION(BlueprintCallable)
 	int GetScore() const;
+	
+	void StartSlowMo();
+	void StopSlowMo();
 
 private:
 	

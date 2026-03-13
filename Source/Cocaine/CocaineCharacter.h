@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CocaineGameMode.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "CocaineCharacter.generated.h"
@@ -22,7 +23,7 @@ UCLASS(abstract)
 class ACocaineCharacter : public ACharacter
 {
 	GENERATED_BODY()
-
+	ACocaineGameMode* CocaineGameMode;
 
 	/** Pawn mesh: first person view (arms; seen only by self) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
@@ -68,8 +69,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category ="Input")
 	class UInputAction* MouseLookAction;
 	
-
+	/** Slow motion Input Action */
+	UPROPERTY(EditAnywhere, Category ="Input")
+	UInputAction* SlowMoAction;
 	
+	/** Grappling's/Interact Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* InteractAction;
 	
@@ -111,6 +115,7 @@ protected:
 
 	/** Set up input action bindings */
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	
 
@@ -140,6 +145,9 @@ protected:
 	
 	virtual void Dash();
 	virtual void StopDash();
+	
+	virtual void SlowMo();
+	virtual void StopSlowMo();
 	
 	bool bIsGrappling{false};
 	FVector GrapplingPoint;
