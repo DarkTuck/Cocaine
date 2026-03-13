@@ -6,7 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 
-#if 0
+#if 1
 #define STLOG(duration,color,text) GEngine->AddOnScreenDebugMessage(-1, duration, color, text)
 #else
 #define STLOG(duration,color,text)
@@ -31,12 +31,12 @@ void ACocaineGameMode::OnStoredMultFade()
 {
 	Currents.storedMult-=Currents.storedMult>0?1:0;
 	UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
-	if (Currents.currentMult<=1)
+	if (Currents.currentMult<=MinCurrentMult)
 	{
 		RestartStoredMultFade();
 		return;
 	}
-	if (Currents.storedMult<=0)
+	if (Currents.storedMult<=MinStoredMult)
 	{
 		Currents.currentMult-=Currents.currentMult>1?1:0;
 		Currents.storedMult=MultThreshold;
@@ -54,8 +54,7 @@ void ACocaineGameMode::OnScoreInterval()
 
 void ACocaineGameMode::OnSlowMoDrain()
 {
-	Currents.storedMult-=SlowMoCost;
-	if (Currents.storedMult<=0) StopSlowMo();
+	CanDrainMult()?DrainMult():StopSlowMo();
 }
 
 /*
@@ -136,7 +135,8 @@ int ACocaineGameMode::GetScore() const
 
 void ACocaineGameMode::StartSlowMo()
 {
-	if (Currents.storedMult<=0) return;
+	if (!CanDrainMult()) return;
+	bIsSlowMo=true;
 	const UWorld* World = GetWorld();
 	World->GetTimerManager().SetTimer(SlowMoDrainTimer,this,&ACocaineGameMode::OnSlowMoDrain,SlowMoDrainInterval,true);
 	UGameplayStatics::SetGlobalTimeDilation(World,TimeScale);
@@ -144,6 +144,7 @@ void ACocaineGameMode::StartSlowMo()
 
 void ACocaineGameMode::StopSlowMo()
 {
+	bIsSlowMo=false;
 	const UWorld* World = GetWorld();
 	World->GetTimerManager().ClearTimer(SlowMoDrainTimer);
 	UGameplayStatics::SetGlobalTimeDilation(World,1);
@@ -166,8 +167,29 @@ void ACocaineGameMode::AddToDisplayedHistory()
 	UIWidget->BP_UpdateLastAction(ReturnString);
 }
 
+void ACocaineGameMode::DrainMult()
+{
+	STLOG(1.f,FColor::Blue,"drain");
+	Currents.storedMult-=SlowMoCost;
+//	if (Currents.currentMult<MinCurrentMult) return;
+	if (Currents.storedMult<=MinStoredMult&&Currents.currentMult!=MinCurrentMult)
+	{
+		Currents.currentMult--;
+		Currents.storedMult=MultThreshold;
+		UIWidget->BP_UpdateMult(Currents.currentMult);
+	}
+	//Currents.storedMult--;
+	UIWidget->BP_UpdateStoredMult(FMath::GetRangePct(0.f,static_cast<float>(MultThreshold),Currents.storedMult));
+}
+
+bool ACocaineGameMode::CanDrainMult() const
+{
+	return (Currents.storedMult>MinStoredMult&&Currents.currentMult>=MinCurrentMult)||(Currents.storedMult==MinStoredMult&&Currents.currentMult!=MinCurrentMult);
+}
+
 bool ACocaineGameMode::CanAddMult(const EMultType MultType)
 {
+	if (bIsSlowMo) return false;
 	for (const EMultType Historic : MultHistory)
 	{
 		if (ReturnMultString(Historic)==ReturnMultString(MultType))

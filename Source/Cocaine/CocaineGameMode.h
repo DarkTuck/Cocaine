@@ -48,15 +48,15 @@ UCLASS(abstract)
 class ACocaineGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int SlideMultValue=2;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int JumpMultValue=2;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KickMultValue=2;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int DashMultValue=2;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrindMultValue=2;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int MantleMultValue=2;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KillMultValue=2;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrappleMultValue=2;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int MultThreshold=3;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int SlideMultValue=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int JumpMultValue=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KickMultValue=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int DashMultValue=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrindMultValue=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int MantleMultValue=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KillMultValue=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrappleMultValue=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int MultThreshold=100;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float MultFadeDuration=5;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float StoredMultFadeDuration=2.5f;
 	
@@ -69,7 +69,7 @@ class ACocaineGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System|Passive Scorring",DisplayName="Should score go down by default") bool bScoreGoseDown;
 	
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|SlowMo",meta=(ClampMin=0,ClampMax=1)) float TimeScale=.5f;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|SlowMo") int SlowMoCost=1;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|SlowMo") int SlowMoCost=10;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|SlowMo") float SlowMoDrainInterval=1.f;
 	
 	
@@ -87,6 +87,10 @@ class ACocaineGameMode : public AGameModeBase
 	
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System") int MultHistoryLimit=3;
 	TArray<EMultType> MultHistory={Empty,Empty,Empty};
+	
+	static constexpr int MinCurrentMult = 1;
+	static constexpr int MinStoredMult = 0;
+	bool bIsSlowMo;
 	
 	void UpdateScore(const float& Score);
 	
@@ -120,6 +124,9 @@ private:
 	
 	void AddToHistory(const EMultType& MultType);
 	void AddToDisplayedHistory();
+	
+	void DrainMult();
+	bool CanDrainMult() const;
 	
 	bool CanAddMult(const EMultType MultType);
 	const TMap<EMultType, int*> Mults{
