@@ -1335,9 +1335,9 @@ void UCocaineMovementComponent::OnKickCooldownFinished()
 
 bool UCocaineMovementComponent::CanKick() const
 {
-	auto Params = CocaineCharacterOwner->GetIgnoreCharacterParams();
+	const auto Params = CocaineCharacterOwner->GetIgnoreCharacterParams();
 	const FVector TraceStart = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetComponentLocation();
-	FVector TraceEnd = TraceStart + CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*KickRange;
+	const FVector TraceEnd = TraceStart + CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*KickRange;
     FHitResult Hit{};
     bool bHit = GetWorld()->LineTraceSingleByProfile(Hit, TraceStart, TraceEnd, "BlockAll",Params);
     LINE(TraceStart,TraceEnd,FColor::Red);

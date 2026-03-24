@@ -34,11 +34,15 @@
 		{
 			"Name": "GeometryScripting",
 			"Enabled": true
-		}
-		,
+		},
 		{
 			"Name": "GeometryProcessing",
 			"Enabled": true
 		}
+	],
+	"TargetPlatforms": [
+		"Linux",
+		"Mac",
+		"Windows"
 	]
 }

@@ -10,7 +10,10 @@
 #include "TimerManager.h"
 #include "Animation/AnimInstance.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
+#include "Kismet/GameplayStatics.h"
+#include "Camera/CameraComponent.h"
 
 AShooterWeapon::AShooterWeapon()
 {
@@ -46,6 +49,7 @@ void AShooterWeapon::BeginPlay()
 	// cast the weapon owner
 	WeaponOwner = Cast<IShooterWeaponHolder>(GetOwner());
 	PawnOwner = Cast<APawn>(GetOwner());
+	if (bUseRayCasts) RayStruct.CocaineCharacter=Cast<ACocaineCharacter>(GetOwner());
 
 	// fill the first ammo clip
 	CurrentBullets = MagazineSize;
@@ -131,8 +135,15 @@ void AShooterWeapon::Fire()
 		return;
 	}
 	
-	// fire a projectile at the target
-	FireProjectile(WeaponOwner->GetWeaponTargetLocation());
+	// fire a RayCast/projectile at the target
+	if (bUseRayCasts)
+	{
+		FireRayCast(WeaponOwner->GetWeaponTargetLocation());
+	}
+	else
+	{
+		FireProjectile(WeaponOwner->GetWeaponTargetLocation());
+	}
 
 	// update the time of our last shot
 	TimeOfLastShot = GetWorld()->GetTimeSeconds();
@@ -172,7 +183,33 @@ void AShooterWeapon::FireProjectile(const FVector& TargetLocation)
 	SpawnParams.Instigator = PawnOwner;
 
 	AShooterProjectile* Projectile = GetWorld()->SpawnActor<AShooterProjectile>(ProjectileClass, ProjectileTransform, SpawnParams);
+	FireLogic();
+}
 
+void AShooterWeapon::FireRayCast(const FVector& TargetLocation)
+{
+	FHitResult HitResult{};
+	const FVector MuzzleLoc = FirstPersonMesh->GetSocketLocation(MuzzleSocketName);
+	const FVector TraceStart = MuzzleLoc + ((TargetLocation - MuzzleLoc).GetSafeNormal() * MuzzleOffset);
+	const FVector TraceEnd = TraceStart+ RayStruct.CocaineCharacter->GetFirstPersonCameraComponent()->GetForwardVector()*RayStruct.RayHitRange;
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,WeaponRay);
+	if (!bHit) return;
+	DrawDebugLine(GetWorld(),TraceStart,TraceEnd,FColor::Red);
+	if (ACharacter* HitCharacter = Cast<ACharacter>(HitResult.GetActor()))
+	{
+		MakeNoise(ShotLoudness, HitCharacter, HitResult.ImpactPoint, ShotNoiseRange, ShotNoiseTag);
+		if (HitCharacter != GetOwner())
+		{
+			UGameplayStatics::ApplyDamage(HitCharacter,RayStruct.RayHitDamage,GetOwner()->GetInstigatorController(),this,RayStruct.HitDamageType);
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Raycast Hit"));
+		}
+	}
+	
+	FireLogic();
+}
+
+void AShooterWeapon::FireLogic()
+{
 	// play the firing montage
 	WeaponOwner->PlayFiringMontage(FiringMontage);
 
