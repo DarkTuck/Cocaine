@@ -21,7 +21,7 @@ class UAnimInstance;
  *  Handles ammo and firing logic
  *  Interacts with the weapon owner through the ShooterWeaponHolder interface
  */
-USTRUCT()
+USTRUCT(Blueprintable)
 struct FWeaponRay
 {
 	GENERATED_BODY()
@@ -127,6 +127,7 @@ protected:
 	bool bUseRayCasts = false;
 	
 	const ECollisionChannel WeaponRay = ECC_EngineTraceChannel4;
+	UPROPERTY(EditAnywhere, Category="Firing")
 	FWeaponRay RayStruct{};
 
 public:	
