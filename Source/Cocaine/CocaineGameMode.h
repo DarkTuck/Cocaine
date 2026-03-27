@@ -29,7 +29,8 @@ enum EMultType
 	Grind,
 	Mantle,
 	Kill,
-	Grapple
+	Grapple,
+	Headshot,
 };
 
 
@@ -56,6 +57,7 @@ class ACocaineGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int MantleMultValue=20;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KillMultValue=20;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrappleMultValue=20;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int HeadshotMultValue=20;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int BaseStoredMultDrainValue=10;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int MultThreshold=100;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float MultFadeDuration=5;
@@ -139,6 +141,7 @@ private:
 		{Mantle,&MantleMultValue},
 		{Kill,&KillMultValue},
 		{Grapple,&GrappleMultValue},
+		{Headshot,&HeadshotMultValue}
 	};
 	const  TMap<EMultType, FString> MultString{
 		{Slide,"Slide"},
@@ -149,7 +152,8 @@ private:
 		{Mantle,"Mantle"},
 		{Kill, "Kill"},
 		{Empty, "Empty"},
-		{Grapple,"Grapple"}
+		{Grapple,"Grapple"},
+		{Headshot,"Headshot"}
 	};
 	FORCEINLINE FString ReturnMultString(const EMultType MultType) const{return MultString[MultType];};
 };

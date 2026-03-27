@@ -192,7 +192,8 @@ void AShooterWeapon::FireRayCast(const FVector& TargetLocation)
 	const FVector MuzzleLoc = FirstPersonMesh->GetSocketLocation(MuzzleSocketName);
 	const FVector TraceStart = MuzzleLoc + ((TargetLocation - MuzzleLoc).GetSafeNormal() * MuzzleOffset);
 	const FVector TraceEnd = TraceStart+ RayStruct.CocaineCharacter->GetFirstPersonCameraComponent()->GetForwardVector()*RayStruct.RayHitRange;
-	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,WeaponRay);
+//	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,WeaponRay);
+	const bool bHit = GetWorld()->SweepSingleByChannel(HitResult,TraceStart,TraceEnd,FQuat::Identity,WeaponRay,FCollisionShape::MakeSphere(RayStruct.RayBulletSize));
 	if (!bHit) return;
 	DrawDebugLine(GetWorld(),TraceStart,TraceEnd,FColor::Red);
 	if (ACharacter* HitCharacter = Cast<ACharacter>(HitResult.GetActor()))

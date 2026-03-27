@@ -24,6 +24,7 @@ void AShooterNPC::BeginPlay()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	Weapon = GetWorld()->SpawnActor<AShooterWeapon>(WeaponClass, GetActorTransform(), SpawnParams);
+	GameMode = Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode());
 }
 
 void AShooterNPC::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -36,18 +37,12 @@ void AShooterNPC::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 float AShooterNPC::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 	// ignore if already dead
 	if (bIsDead)
 	{
 		return 0.0f;
 	}
-	if (DamageEvent.GetTypeID()==FPointDamageEvent::ClassID)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Point damage"));
-		const FPointDamageEvent& PointDamageEvent = static_cast<const FPointDamageEvent&>(DamageEvent);
-		Damage = InternalTakePointDamage(Damage, PointDamageEvent, EventInstigator, DamageCauser);
-	}
-
 	// Reduce HP
 	CurrentHP -= Damage;
 
@@ -68,6 +63,7 @@ float AShooterNPC::InternalTakePointDamage(float Damage, struct FPointDamageEven
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Head hit"));
 		Damage *= 2;
+		GameMode->AddMult(Headshot);
 	}	
 	return Damage;
 }

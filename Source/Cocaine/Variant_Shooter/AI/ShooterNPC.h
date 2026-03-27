@@ -82,6 +82,9 @@ protected:
 
 	/** Deferred destruction on death timer */
 	FTimerHandle DeathTimer;
+	
+	/** Pointer To CocaineGameMode for mult system */
+	TObjectPtr<ACocaineGameMode> GameMode;
 
 public:
 
