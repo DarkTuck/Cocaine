@@ -97,6 +97,7 @@ protected:
 	void ExplosionCheck(const FVector& ExplosionCenter);
 
 	/** Processes a projectile hit for the given actor */
+	void ProcessHit(AActor* HitActor, UPrimitiveComponent* HitComp, const FVector& HitLocation, const FVector& HitDirection, const FHitResult& Hit);
 	void ProcessHit(AActor* HitActor, UPrimitiveComponent* HitComp, const FVector& HitLocation, const FVector& HitDirection);
 
 	/** Passes control to Blueprint to implement any effects on hit. */

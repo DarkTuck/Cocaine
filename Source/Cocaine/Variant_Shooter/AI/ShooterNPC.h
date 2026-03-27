@@ -28,7 +28,6 @@ public:
 	float CurrentHP = 100.0f;
 
 protected:
-
 	/** Name of the collision profile to use during ragdoll death */
 	UPROPERTY(EditAnywhere, Category="Damage")
 	FName RagdollCollisionProfile = FName("Ragdoll");
@@ -101,6 +100,7 @@ public:
 
 	/** Handle incoming damage */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+	virtual float InternalTakePointDamage(float Damage, struct FPointDamageEvent const& PointDamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 public:
 

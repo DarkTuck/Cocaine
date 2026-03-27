@@ -11,6 +11,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
+#include "Engine/DamageEvents.h"
 
 void AShooterNPC::BeginPlay()
 {
@@ -40,6 +41,12 @@ float AShooterNPC::TakeDamage(float Damage, struct FDamageEvent const& DamageEve
 	{
 		return 0.0f;
 	}
+	if (DamageEvent.GetTypeID()==FPointDamageEvent::ClassID)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Point damage"));
+		const FPointDamageEvent& PointDamageEvent = static_cast<const FPointDamageEvent&>(DamageEvent);
+		Damage = InternalTakePointDamage(Damage, PointDamageEvent, EventInstigator, DamageCauser);
+	}
 
 	// Reduce HP
 	CurrentHP -= Damage;
@@ -50,6 +57,18 @@ float AShooterNPC::TakeDamage(float Damage, struct FDamageEvent const& DamageEve
 		Die();
 	}
 
+	return Damage;
+}
+
+float AShooterNPC::InternalTakePointDamage(float Damage, struct FPointDamageEvent const& PointDamageEvent,
+	class AController* EventInstigator, AActor* DamageCauser)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Point damage %ls"),*PointDamageEvent.HitInfo.BoneName.ToString());
+	if (PointDamageEvent.HitInfo.BoneName == FName(TEXT("head")))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Head hit"));
+		Damage *= 2;
+	}	
 	return Damage;
 }
 

@@ -200,7 +200,7 @@ void AShooterWeapon::FireRayCast(const FVector& TargetLocation)
 		MakeNoise(ShotLoudness, HitCharacter, HitResult.ImpactPoint, ShotNoiseRange, ShotNoiseTag);
 		if (HitCharacter != GetOwner())
 		{
-			UGameplayStatics::ApplyDamage(HitCharacter,RayStruct.RayHitDamage,GetOwner()->GetInstigatorController(),this,RayStruct.HitDamageType);
+			UGameplayStatics::ApplyPointDamage(HitCharacter,RayStruct.RayHitDamage,-HitResult.ImpactNormal,HitResult,GetOwner()->GetInstigatorController(),this,RayStruct.HitDamageType);
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Raycast Hit"));
 		}
 	}

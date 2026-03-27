@@ -77,7 +77,7 @@ void AShooterProjectile::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Ot
 	} else {
 
 		// single hit projectile. Process the collided actor
-		ProcessHit(Other, OtherComp, Hit.ImpactPoint, -Hit.ImpactNormal);
+		ProcessHit(Other, OtherComp, Hit.ImpactPoint, -Hit.ImpactNormal,Hit);
 
 	}
 
@@ -139,7 +139,29 @@ void AShooterProjectile::ExplosionCheck(const FVector& ExplosionCenter)
 	}
 }
 
-void AShooterProjectile::ProcessHit(AActor* HitActor, UPrimitiveComponent* HitComp, const FVector& HitLocation, const FVector& HitDirection)
+void AShooterProjectile::ProcessHit(AActor* HitActor, UPrimitiveComponent* HitComp, const FVector& HitLocation, const FVector& HitDirection, const FHitResult& Hit)
+{
+	// have we hit a character?
+	if (ACharacter* HitCharacter = Cast<ACharacter>(HitActor))
+	{
+		// ignore the owner of this projectile
+		if (HitCharacter != GetOwner() || bDamageOwner)
+		{
+			// apply damage to the character
+			UGameplayStatics::ApplyPointDamage(HitCharacter,HitDamage,HitDirection,Hit,GetInstigatorController(),this,HitDamageType);
+		}
+	}
+
+	// have we hit a physics object?
+	if (HitComp->IsSimulatingPhysics())
+	{
+		// give some physics impulse to the object
+		HitComp->AddImpulseAtLocation(HitDirection * PhysicsForce, HitLocation);
+	}
+}
+
+void AShooterProjectile::ProcessHit(AActor* HitActor, UPrimitiveComponent* HitComp, const FVector& HitLocation,
+	const FVector& HitDirection)
 {
 	// have we hit a character?
 	if (ACharacter* HitCharacter = Cast<ACharacter>(HitActor))
