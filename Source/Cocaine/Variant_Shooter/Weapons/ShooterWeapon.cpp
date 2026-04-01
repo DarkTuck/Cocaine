@@ -14,6 +14,7 @@
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
 
 AShooterWeapon::AShooterWeapon()
 {
@@ -192,8 +193,8 @@ void AShooterWeapon::FireRayCast(const FVector& TargetLocation)
 	const FVector MuzzleLoc = FirstPersonMesh->GetSocketLocation(MuzzleSocketName);
 	const FVector TraceStart = MuzzleLoc + ((TargetLocation - MuzzleLoc).GetSafeNormal() * MuzzleOffset);
 	const FVector TraceEnd = TraceStart+ RayStruct.CocaineCharacter->GetFirstPersonCameraComponent()->GetForwardVector()*RayStruct.RayHitRange;
-//	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,WeaponRay);
-	const bool bHit = GetWorld()->SweepSingleByChannel(HitResult,TraceStart,TraceEnd,FQuat::Identity,WeaponRay,FCollisionShape::MakeSphere(RayStruct.RayBulletSize));
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,WeaponRay);
+//	const bool bHit = GetWorld()->SweepSingleByChannel(HitResult,TraceStart,TraceEnd,FQuat::Identity,WeaponRay,FCollisionShape::MakeSphere(RayStruct.RayBulletSize));
 	if (!bHit) return;
 	DrawDebugLine(GetWorld(),TraceStart,TraceEnd,FColor::Red);
 	if (ACharacter* HitCharacter = Cast<ACharacter>(HitResult.GetActor()))
@@ -203,6 +204,7 @@ void AShooterWeapon::FireRayCast(const FVector& TargetLocation)
 		{
 			UGameplayStatics::ApplyPointDamage(HitCharacter,RayStruct.RayHitDamage,-HitResult.ImpactNormal,HitResult,GetOwner()->GetInstigatorController(),this,RayStruct.HitDamageType);
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Raycast Hit"));
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,  FString::Printf(TEXT("HitBone: %s"), *HitResult.GetComponent()->GetName()));
 		}
 	}
 	

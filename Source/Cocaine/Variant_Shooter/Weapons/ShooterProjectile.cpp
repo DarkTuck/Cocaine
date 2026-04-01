@@ -147,6 +147,7 @@ void AShooterProjectile::ProcessHit(AActor* HitActor, UPrimitiveComponent* HitCo
 		// ignore the owner of this projectile
 		if (HitCharacter != GetOwner() || bDamageOwner)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, Hit.BoneName.ToString());
 			// apply damage to the character
 			UGameplayStatics::ApplyPointDamage(HitCharacter,HitDamage,HitDirection,Hit,GetInstigatorController(),this,HitDamageType);
 		}

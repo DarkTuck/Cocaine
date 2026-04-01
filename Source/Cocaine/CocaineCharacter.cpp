@@ -21,6 +21,7 @@ ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer
 	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 	
 	// Create the first person mesh that will be viewed only by this character's owner
 	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("First Person Mesh"));
