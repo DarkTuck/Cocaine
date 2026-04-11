@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CocaineCharacter.h"
 #include "GameFramework/Actor.h"
 #include "ShooterWeaponHolder.h"
 #include "Animation/AnimInstance.h"

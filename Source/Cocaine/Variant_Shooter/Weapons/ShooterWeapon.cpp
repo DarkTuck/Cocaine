@@ -2,7 +2,6 @@
 
 
 #include "ShooterWeapon.h"
-#include "CocaineMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/World.h"
 #include "ShooterProjectile.h"
@@ -10,7 +9,6 @@
 #include "Components/SceneComponent.h"
 #include "TimerManager.h"
 #include "Animation/AnimInstance.h"
-#include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
@@ -198,7 +196,11 @@ void AShooterWeapon::FireRayCast(const FVector& TargetLocation)
 	Params.bReturnPhysicalMaterial = true;
 	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,WeaponRay,Params);
 //	const bool bHit = GetWorld()->SweepSingleByChannel(HitResult,TraceStart,TraceEnd,FQuat::Identity,WeaponRay,FCollisionShape::MakeSphere(RayStruct.RayBulletSize));
-	if (!bHit) return;
+	if (!bHit)
+	{
+		FireLogic();
+		return;
+	}
 	DrawDebugLine(GetWorld(),TraceStart,TraceEnd,FColor::Red);
 	if (ACharacter* HitCharacter = Cast<ACharacter>(HitResult.GetActor()))
 	{
