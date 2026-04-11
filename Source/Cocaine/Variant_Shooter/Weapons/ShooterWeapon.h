@@ -24,16 +24,11 @@ class UAnimInstance;
 USTRUCT(Blueprintable)
 struct FWeaponRay
 {
-	GENERATED_BODY()	
-	UPROPERTY(EditAnywhere, Category="Firing")
-	float RayBulletSize=20.f;
+	GENERATED_BODY()
 	UPROPERTY(EditAnywhere, Category="Firing")
 	float RayHitDamage = 10.0f;
 	UPROPERTY(EditAnywhere, Category="Firing")
-	float RayHitRange = 100000.f;
-	UPROPERTY(EditAnywhere, Category="Firing")
 	float RayHitTraceRadius = 0.f;
-	TObjectPtr<ACocaineCharacter> CocaineCharacter;
 	UPROPERTY(EditAnywhere, Category="Firing")
 	TSubclassOf<UDamageType> HitDamageType;
 };

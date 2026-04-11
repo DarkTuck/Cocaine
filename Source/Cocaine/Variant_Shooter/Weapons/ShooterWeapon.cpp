@@ -50,7 +50,6 @@ void AShooterWeapon::BeginPlay()
 	// cast the weapon owner
 	WeaponOwner = Cast<IShooterWeaponHolder>(GetOwner());
 	PawnOwner = Cast<APawn>(GetOwner());
-	if (bUseRayCasts) RayStruct.CocaineCharacter=Cast<ACocaineCharacter>(GetOwner());
 
 	// fill the first ammo clip
 	CurrentBullets = MagazineSize;
@@ -192,8 +191,8 @@ void AShooterWeapon::FireRayCast(const FVector& TargetLocation)
 	
 	FHitResult HitResult{};
 	const FVector MuzzleLoc = FirstPersonMesh->GetSocketLocation(MuzzleSocketName);
-	const FVector TraceStart = MuzzleLoc + ((TargetLocation - MuzzleLoc).GetSafeNormal() * MuzzleOffset);
-	const FVector TraceEnd = TraceStart+ RayStruct.CocaineCharacter->GetFirstPersonCameraComponent()->GetForwardVector()*RayStruct.RayHitRange;
+	const FVector TraceStart = MuzzleLoc;
+	const FVector TraceEnd = TargetLocation;
 	FCollisionQueryParams& Params = FCollisionQueryParams::DefaultQueryParam;
 	Params.bTraceComplex = true;
 	Params.bReturnPhysicalMaterial = true;
