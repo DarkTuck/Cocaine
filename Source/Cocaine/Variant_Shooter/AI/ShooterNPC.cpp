@@ -21,7 +21,7 @@ void AShooterNPC::BeginPlay()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.Instigator = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;	
 
 	Weapon = GetWorld()->SpawnActor<AShooterWeapon>(WeaponClass, GetActorTransform(), SpawnParams);
 	GameMode = Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode());
@@ -58,13 +58,14 @@ float AShooterNPC::TakeDamage(float Damage, struct FDamageEvent const& DamageEve
 float AShooterNPC::InternalTakePointDamage(float Damage, struct FPointDamageEvent const& PointDamageEvent,
 	class AController* EventInstigator, AActor* DamageCauser)
 {
+	
 	UE_LOG(LogTemp, Warning, TEXT("Point damage %ls"),*PointDamageEvent.HitInfo.BoneName.ToString());
-	if (PointDamageEvent.HitInfo.BoneName == FName(TEXT("head")))
+	if (IsHeadShot(PointDamageEvent.HitInfo.ImpactPoint,PointDamageEvent.ShotDirection,1.f,DamageCauser))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Head hit"));
-		Damage *= 2;
-		GameMode->AddMult(Headshot);
-	}	
+		Damage *= HeadShotMultiplayer;
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Headshot %f"), Damage));
+		 GameMode->AddMult(Headshot);
+	}
 	return Damage;
 }
 

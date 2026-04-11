@@ -28,6 +28,8 @@ public:
 	float CurrentHP = 100.0f;
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage")
+	float HeadShotMultiplayer = 2.f;
 	/** Name of the collision profile to use during ragdoll death */
 	UPROPERTY(EditAnywhere, Category="Damage")
 	FName RagdollCollisionProfile = FName("Ragdoll");

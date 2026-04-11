@@ -22,7 +22,8 @@ public class Cocaine : ModuleRules
 			"CableComponent",
 			"GeometryFramework",
 			"GeometryScriptingCore",
-			"DynamicMesh"
+			"DynamicMesh",
+			"PhysicsCore"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

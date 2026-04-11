@@ -2,6 +2,7 @@
 
 
 #include "ShooterWeapon.h"
+#include "CocaineMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/World.h"
 #include "ShooterProjectile.h"
@@ -9,12 +10,11 @@
 #include "Components/SceneComponent.h"
 #include "TimerManager.h"
 #include "Animation/AnimInstance.h"
+#include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
-#include "Camera/CameraComponent.h"
-#include "Components/CapsuleComponent.h"
 
 AShooterWeapon::AShooterWeapon()
 {
@@ -189,11 +189,15 @@ void AShooterWeapon::FireProjectile(const FVector& TargetLocation)
 
 void AShooterWeapon::FireRayCast(const FVector& TargetLocation)
 {
+	
 	FHitResult HitResult{};
 	const FVector MuzzleLoc = FirstPersonMesh->GetSocketLocation(MuzzleSocketName);
 	const FVector TraceStart = MuzzleLoc + ((TargetLocation - MuzzleLoc).GetSafeNormal() * MuzzleOffset);
 	const FVector TraceEnd = TraceStart+ RayStruct.CocaineCharacter->GetFirstPersonCameraComponent()->GetForwardVector()*RayStruct.RayHitRange;
-	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,WeaponRay);
+	FCollisionQueryParams& Params = FCollisionQueryParams::DefaultQueryParam;
+	Params.bTraceComplex = true;
+	Params.bReturnPhysicalMaterial = true;
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,WeaponRay,Params);
 //	const bool bHit = GetWorld()->SweepSingleByChannel(HitResult,TraceStart,TraceEnd,FQuat::Identity,WeaponRay,FCollisionShape::MakeSphere(RayStruct.RayBulletSize));
 	if (!bHit) return;
 	DrawDebugLine(GetWorld(),TraceStart,TraceEnd,FColor::Red);
@@ -207,7 +211,6 @@ void AShooterWeapon::FireRayCast(const FVector& TargetLocation)
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,  FString::Printf(TEXT("HitBone: %s"), *HitResult.GetComponent()->GetName()));
 		}
 	}
-	
 	FireLogic();
 }
 

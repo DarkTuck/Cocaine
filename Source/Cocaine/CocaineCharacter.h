@@ -6,6 +6,7 @@
 #include "CocaineGameMode.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "Net/UnrealNetwork.h"
 #include "CocaineCharacter.generated.h"
 
 class UInputComponent;
@@ -32,6 +33,8 @@ class ACocaineCharacter : public ACharacter
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 protected:
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly, Category=Movement) class UCocaineMovementComponent*CocaineMovementComponent;
 	
@@ -156,4 +159,28 @@ protected:
 	float GrappleForce{1000000.f};
 	UPROPERTY(BlueprintReadWrite,EditDefaultsOnly,Category="Grappling")
 	float MaxLineDistance {1000.f};
+	
+	
+	// Headshots
+protected:
+	
+	/** head bone/socket for headshots */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Pawn)
+	FName HeadBone = "head";
+	/** head Z offset from head bone */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Pawn)
+	float HeadHeight;
+	/** radius around head location that counts as headshot at 1.0 head scaling */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Pawn)
+	float HeadRadius;
+	/** head scale factor (generally for use at runtime) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Replicated, Category = Pawn)
+	float HeadScale;
+	
+public:
+	/** returns location of head (origin of headshot zone); will force a skeleton update if mesh hasn't been rendered (or dedicated server) so the provided position is accurate */
+	virtual FVector GetHeadLocation(float PredictionTime=0.f);
+	/** checks for a head shot - called by weapons with head shot bonuses. */
+	UFUNCTION(BlueprintCallable, Category = Pawn)
+	virtual bool IsHeadShot(FVector HitLocation, FVector ShotDirection, float WeaponHeadScaling, AActor* ShotInstigator, float PredictionTime = 0.f);
 };

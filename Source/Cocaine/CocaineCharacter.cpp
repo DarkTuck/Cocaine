@@ -13,6 +13,12 @@
 #include "CableComponent.h"
 #include "CocaineGameMode.h"
 
+void ACocaineCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ACocaineCharacter, HeadScale);
+}
+
 ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer.SetDefaultSubobjectClass<UCocaineMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
@@ -220,6 +226,47 @@ void ACocaineCharacter::StopSlowMo()
 	CocaineGameMode->StopSlowMo();
 }
 
+/* Most of this code is "borrowed" from UT3 as we weren't able to do headshots using line tracing.
+ * As UT3 uses math for this ability, and for now as I am not entirely sure how it's working,
+ * the code is copied/updated for the newer engine while cutting out stuff we don't use/need
+ * When I get better understanding, then maybe this code will be more unique for our purpose */
+
+FVector ACocaineCharacter::GetHeadLocation(float PredictionTime)
+{
+	// force mesh update if necessary
+	if (GetMesh()->IsRegistered() && GetMesh()->VisibilityBasedAnimTickOption > EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones && !GetMesh()->bRecentlyRendered)
+	{
+		if (GetMesh()->VisibilityBasedAnimTickOption > EVisibilityBasedAnimTickOption::AlwaysTickPose)
+		{
+			// important to have significant time here so any transitions complete
+			// FIXME: step size needs to be this small due to usage of framerate-dependent FInterpTo() in the anim blueprint
+			constexpr float Step = 0.1f;
+			for (float TickTime = FMath::Min<float>(GetWorld()->TimeSeconds - GetMesh()->GetLastRenderTime(), 1.0f); TickTime > 0.0f; TickTime -= Step)
+			{
+				GetMesh()->TickAnimation(FMath::Min<float>(TickTime, Step), false);
+			}
+			GetMesh()->AnimUpdateRateParams->bSkipEvaluation = false;
+			GetMesh()->AnimUpdateRateParams->bInterpolateSkippedFrames = false;
+			GetMesh()->RefreshBoneTransforms();
+			GetMesh()->UpdateComponentToWorld();
+		}
+	}
+	const FVector Result = GetMesh()->GetSocketLocation(HeadBone) + FVector(0.0f, 0.0f, HeadHeight);
+	
+	// offset based on PredictionTime to previous position
+	return Result;
+}
+
+bool ACocaineCharacter::IsHeadShot(FVector HitLocation, FVector ShotDirection, float WeaponHeadScaling,
+	AActor* ShotInstigator, float PredictionTime)
+{
+	const FVector HeadLocation = GetHeadLocation();
+	const bool bHeadShot = FMath::PointDistToLine(HeadLocation, ShotDirection, HitLocation) < HeadRadius * HeadScale * WeaponHeadScaling;
+	
+	return bHeadShot;
+}
+
+/* End off UT3 borrowed code */
 
 void ACocaineCharacter::MoveInput(const FInputActionValue& Value)
 {
