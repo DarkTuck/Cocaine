@@ -488,7 +488,7 @@ void UCocaineMovementComponent::PhysSlide(float DeltaTime, int32 Iterations)
 		SlopeForce.Z = 0.f;
 		Velocity += SlopeForce * SlideGravityForce * DeltaTime;
 		
-		Acceleration = Acceleration.ProjectOnTo(UpdatedComponent->GetRightVector().GetSafeNormal2D());
+		Acceleration = Acceleration.ProjectOnTo(UpdatedComponent->GetForwardVector().GetSafeNormal2D());
 
 		// Apply acceleration
 		CalcVelocity(timeTick, GroundFriction * SlideFrictionFactor, false, GetMaxBrakingDeceleration());
