@@ -189,7 +189,7 @@ float UCocaineMovementComponent::GetMaxSpeed() const
 	case CMOVE_Mantle:
 		return MaxSprintSpeed;
 	case CMOVE_Grind:
-		return GrindSpeed;
+		return GrindMaxSpeed;
 	default:
 ;		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement Mode"));
 		return -1.f;
@@ -207,6 +207,25 @@ float UCocaineMovementComponent::GetMaxBrakingDeceleration() const
 	default:
 		UE_LOG(LogTemp,Warning,TEXT("Invalid Movement Mode"));
 		return -1.f;
+	}
+}
+
+float UCocaineMovementComponent::GetSpeedBoost() const
+{
+	if (MovementMode!=MOVE_Custom) return DefaultSpeedBoost;
+	switch (CustomMovementMode)
+	{
+		case CMOVE_Slide:
+			return SlideSpeedBoost;
+		case CMOVE_Prone:
+			return ProneSpeedBoost;
+		case CMOVE_Mantle:
+			return MantleSpeedBoost;
+		case CMOVE_Grind:
+			return GrindSpeedBoost;
+		default:
+			UE_LOG(LogTemp,Warning,TEXT("Invalid Movement Mode"));
+			return -1.f;
 	}
 }
 

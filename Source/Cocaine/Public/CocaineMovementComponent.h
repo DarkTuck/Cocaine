@@ -91,6 +91,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") float MaxSprintSpeed=750.f;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") bool bUseGravityInRootMotion=true;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") bool bRootMotionDash=false;
+	constexpr static float DefaultSpeedBoost = 0.f;
 	
 	// slide
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float MinSlideSpeed=400.f;
@@ -99,12 +100,14 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideGravityForce=4000.f;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideFrictionFactor=.06f;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float BrakingDecelerationSliding=1000.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideSpeedBoost = DefaultSpeedBoost;
 	
 	// prone
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float Prone_EnterHoldDuration=2.f;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneSlideEnterImpulse=300.f;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneMaxSpeed=300.f;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float BrakingDecelerationProning=2500.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneSpeedBoost = DefaultSpeedBoost;
 	
 	// Dash
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float DashImpulse=1000.f;
@@ -129,11 +132,16 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* TransitionShortMantleMontage;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* ProxyShortMantleMontage;
 	UPROPERTY() FVector MantleTarget;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleSpeedBoost = DefaultSpeedBoost;
 	
 	// Grind
 	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindDetectionRadius = 50;
 	float GrindDetectionRadiusSquared;
-	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindSpeed = 100;
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind",meta=(DeprecatedProperty)) float GrindSpeed = 100;
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindStartingSpeed = 100;
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindMaxSpeed = 1000;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Grind") float GrindSpeedBoost = DefaultSpeedBoost;
+
 	UPROPERTY() FGrindState GrindState{};
 	
 	// Kick
@@ -186,6 +194,7 @@ public:
     virtual bool CanCrouchInCurrentState() const override;
 	virtual float GetMaxSpeed() const override;
 	virtual float GetMaxBrakingDeceleration() const override;
+	float GetSpeedBoost() const;
 	virtual bool CanAttemptJump() const override;
 	virtual  void AddInputVector(FVector WorldVector, bool bForce = false) override;
 protected:
