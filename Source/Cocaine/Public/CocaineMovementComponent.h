@@ -39,6 +39,7 @@ struct FGrindState
 	float MoveToGrindEntryPointDuration {0.2f};
 	float MoveToGrindEntryPointTimeElapsed {0.f};
 	float DistanceAlongGrind {0.0f};
+	float CurrentGrindSpeed{0.0f};
 	bool bGrindingForward {true};
 	bool bMovingToGrindEntryPoint {true};
 };
@@ -141,6 +142,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindStartingSpeed = 100;
 	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindMaxSpeed = 1000;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Grind") float GrindSpeedBoost = DefaultSpeedBoost;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Grind") float GrindSpeedGain = 5.f;
 
 	UPROPERTY() FGrindState GrindState{};
 	

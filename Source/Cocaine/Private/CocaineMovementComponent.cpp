@@ -1267,6 +1267,7 @@ bool UCocaineMovementComponent::TryGrind()
 
 void UCocaineMovementComponent::EnterGrind(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
+	GrindState.CurrentGrindSpeed=GrindStartingSpeed;
 }
 
 void UCocaineMovementComponent::ExitGrind()
@@ -1274,6 +1275,7 @@ void UCocaineMovementComponent::ExitGrind()
 	CharacterOwner->MoveIgnoreActorRemove(GrindState.GrindingRail.Get());
 	GrindState.GrindingRail=nullptr;
 	GrindState.GrindSplineComponent=nullptr;
+	GrindState.CurrentGrindSpeed=0.f;
 	SLOG("Exit Grind")
 }
 
@@ -1299,13 +1301,15 @@ void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
 	}
 	else
 	{
+		GrindState.CurrentGrindSpeed = FMath::Clamp(GrindState.CurrentGrindSpeed+GrindSpeedGain,0.f,GrindMaxSpeed);
+		SLOG(FString::Printf(TEXT("Grind Speed: %f"),GrindState.CurrentGrindSpeed))
 		if (GrindState.bGrindingForward)
 		{
-			GrindState.DistanceAlongGrind += GrindSpeed*DeltaTime;
+			GrindState.DistanceAlongGrind += GrindState.CurrentGrindSpeed*DeltaTime;
 		}
 		else
 		{
-			GrindState.DistanceAlongGrind -= GrindSpeed*DeltaTime;
+			GrindState.DistanceAlongGrind -= GrindState.CurrentGrindSpeed*DeltaTime;
 		}
 		
 		const float SplineLenght {GrindState.GrindSplineComponent->GetSplineLength()};
