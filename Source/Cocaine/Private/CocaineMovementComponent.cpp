@@ -141,7 +141,7 @@ void UCocaineMovementComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 	CocaineCharacterOwner=Cast<ACocaineCharacter>(GetOwner());
-	GrindDetectionRadiusSquared = GrindDetectionRadius * GrindDetectionRadius;
+	GrindProperties.GrindDetectionRadiusSquared = GrindProperties.GrindDetectionRadius * GrindProperties.GrindDetectionRadius;
 }
 // Network
 void UCocaineMovementComponent::UpdateFromCompressedFlags(uint8 InFlags)
@@ -183,13 +183,13 @@ float UCocaineMovementComponent::GetMaxSpeed() const
 	switch (CustomMovementMode)
 	{
 	case CMOVE_Slide:
-		return MaxSlideSpeed;
+		return SlideProperties.MaxSlideSpeed;
 	case CMOVE_Prone:
-		return ProneMaxSpeed;
+		return ProneProperties.ProneMaxSpeed;
 	case CMOVE_Mantle:
 		return MaxSprintSpeed;
 	case CMOVE_Grind:
-		return GrindMaxSpeed;
+		return GrindProperties.GrindMaxSpeed;
 	default:
 ;		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement Mode"));
 		return -1.f;
@@ -201,28 +201,29 @@ float UCocaineMovementComponent::GetMaxBrakingDeceleration() const
 	switch (CustomMovementMode)
 	{
 	case CMOVE_Slide:
-		return BrakingDecelerationSliding;
+		return SlideProperties.BrakingDecelerationSliding;
 	case CMOVE_Prone:
-		return BrakingDecelerationProning;
+		return ProneProperties.BrakingDecelerationProning;
 	default:
 		UE_LOG(LogTemp,Warning,TEXT("Invalid Movement Mode"));
 		return -1.f;
 	}
 }
 
-float UCocaineMovementComponent::GetSpeedBoost() const
+float UCocaineMovementComponent::GetSpeedBoost(uint8 Mode = CMOVE_None) const
 {
+	if (Mode!=CMOVE_None) Mode=CustomMovementMode;
 	if (MovementMode!=MOVE_Custom) return DefaultSpeedBoost;
-	switch (CustomMovementMode)
+	switch (Mode)
 	{
 		case CMOVE_Slide:
-			return SlideSpeedBoost;
+			return SlideProperties.SlideSpeedBoost;
 		case CMOVE_Prone:
-			return ProneSpeedBoost;
+			return ProneProperties.ProneSpeedBoost;
 		case CMOVE_Mantle:
-			return MantleSpeedBoost;
+			return MantleProperties.MantleSpeedBoost;
 		case CMOVE_Grind:
-			return GrindSpeedBoost;
+			return GrindProperties.GrindSpeedBoost;
 		default:
 			UE_LOG(LogTemp,Warning,TEXT("Invalid Movement Mode"));
 			return -1.f;
@@ -277,7 +278,7 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	const bool bAuthProxy = CharacterOwner->HasAuthority() && !CharacterOwner->IsLocallyControlled();
 	if (Safe_bWantsToDash&&CanDash())
 	{
-		if (!bAuthProxy||GetTS() - DashStartTime > AuthDashCooldownDuration)
+		if (!bAuthProxy||GetTS() - DashStartTime > DashProperties.AuthDashCooldownDuration)
 		{
 			bRootMotionDash?PerformDashRootMotion():PerformDash();
 			Safe_bWantsToDash=false;
@@ -291,7 +292,7 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	// Kick
 	if (Safe_bWantsToKick&&CanKick())
 	{
-		if (!bAuthProxy||GetTS()-KickStartTime>AuthKickCooldownDuration)
+		if (!bAuthProxy||GetTS()-KickStartTime>KickProperties.AuthKickCooldownDuration)
 		{
 			PerformKick();
 			Safe_bWantsToKick=false;
@@ -418,6 +419,14 @@ void UCocaineMovementComponent::UpdateMult() const
 	}
 }
 
+void UCocaineMovementComponent::AddBoost(const uint8 Mode = CMOVE_None) const
+{
+	const FVector BoostDirection{GetOwner()->GetActorForwardVector()};
+	const FVector BoostVelocity{BoostDirection * GetSpeedBoost(Mode)};
+	SLOG("Boosting")
+	CocaineCharacterOwner->LaunchCharacter(BoostVelocity,false,false);
+}
+
 // Movement Event
 void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
  {
@@ -442,7 +451,7 @@ void UCocaineMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMoveme
 {
 	bWantsToCrouch = true;
 	bOrientRotationToMovement = false;
-	Velocity += Velocity.GetSafeNormal2D() * SlideEnterImpulse;
+	Velocity += Velocity.GetSafeNormal2D() * (SlideProperties.SlideEnterImpulse*GetSpeedBoost(CMOVE_Slide));
 
 	FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, true, NULL);
 }
@@ -459,7 +468,7 @@ bool UCocaineMovementComponent::CanSlide() const
 	FVector End = Start + CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.5f * FVector::DownVector;
 	FName ProfileName = TEXT("BlockAll");
 	bool bValidSurface = GetWorld()->LineTraceTestByProfile(Start, End, ProfileName, CocaineCharacterOwner->GetIgnoreCharacterParams());
-	bool bEnoughSpeed = Velocity.SizeSquared() > pow(MinSlideSpeed, 2);
+	bool bEnoughSpeed = Velocity.SizeSquared() > pow(SlideProperties.MinSlideSpeed, 2);
 	
 	return bValidSurface && bEnoughSpeed;
 }
@@ -505,12 +514,12 @@ void UCocaineMovementComponent::PhysSlide(float DeltaTime, int32 Iterations)
 
 		FVector SlopeForce = CurrentFloor.HitResult.Normal;
 		SlopeForce.Z = 0.f;
-		Velocity += SlopeForce * SlideGravityForce * DeltaTime;
+		Velocity += SlopeForce * SlideProperties.SlideGravityForce * DeltaTime;
 		
 		Acceleration = Acceleration.ProjectOnTo(UpdatedComponent->GetForwardVector().GetSafeNormal2D());
 
 		// Apply acceleration
-		CalcVelocity(timeTick, GroundFriction * SlideFrictionFactor, false, GetMaxBrakingDeceleration());
+		CalcVelocity(timeTick, GroundFriction * SlideProperties.SlideFrictionFactor, false, GetMaxBrakingDeceleration());
 		
 		// Compute move parameters
 		const FVector MoveVelocity = Velocity;
@@ -691,7 +700,7 @@ void UCocaineMovementComponent::EnterProne(EMovementMode PrevMode, ECustomMoveme
 	
 	if (PrevMode==MOVE_Custom&&PrevCustomMode==CMOVE_Slide)
 	{
-		Velocity+=Velocity.GetSafeNormal2D()* ProneSlideEnterImpulse;
+		Velocity+=Velocity.GetSafeNormal2D()* ProneProperties.ProneSlideEnterImpulse;
 	}
 	
 	FindFloor(UpdatedComponent->GetComponentLocation(),CurrentFloor,true,NULL);
@@ -699,6 +708,7 @@ void UCocaineMovementComponent::EnterProne(EMovementMode PrevMode, ECustomMoveme
 
 void UCocaineMovementComponent::ExitProne()
 {
+	AddBoost(CMOVE_Prone);
 }
 
 bool UCocaineMovementComponent::CanProne() const
@@ -923,7 +933,7 @@ void UCocaineMovementComponent::PerformDash()
 	
 	FVector DashDirection = (Acceleration.IsNearlyZero() ? UpdatedComponent->GetForwardVector() : Acceleration).GetSafeNormal2D();
 	DashDirection += FVector::UpVector * .1f;
-	Velocity = DashImpulse * (DashDirection + FVector::UpVector * .1f);
+	Velocity = DashProperties.DashImpulse * (DashDirection + FVector::UpVector * .1f);
 
 	const FQuat NewRotation = FRotationMatrix::MakeFromXZ(DashDirection,FVector::UpVector).ToQuat();
 	FHitResult Hit;
@@ -941,7 +951,7 @@ void UCocaineMovementComponent::PerformDashRootMotion()
 	
 	//changing mode to flying will not apply gravity to RootMotion animation (Z coordinate)
 	SetMovementMode(bUseGravityInRootMotion ? MOVE_Falling : MOVE_Flying);
-	CharacterOwner->PlayAnimMontage(DashMontage);
+	CharacterOwner->PlayAnimMontage(DashProperties.DashMontage);
 	
 	DashStartDelegate.Broadcast();
 }
@@ -956,16 +966,16 @@ bool UCocaineMovementComponent::TryMantle()
 	FVector BaseLocation = UpdatedComponent->GetComponentLocation()+FVector::DownVector*CapHH();
 	FVector Fwd= UpdatedComponent->GetForwardVector().GetSafeNormal2D(); // Forward
 	auto Params = CocaineCharacterOwner->GetIgnoreCharacterParams();
-	float MaxHeight = CapHH()*2+MantleReachHeight;
-	float CosMMWSA = FMath::Cos(FMath::DegreesToRadians(MantleMinWallSteepnessAngle)); // Cosine of MantleMinWallSteepnessAngle
-	float CosMMSA = FMath::Cos(FMath::DegreesToRadians(MantleMaxSurfaceAngle)); // Cosine of MantleMaxSurfaceAngle
-	float CosMMAA = FMath::Cos(FMath::DegreesToRadians(MantleMaxAlignmentAngle)); // Cosine of MantleMaxAlignmentAngle
+	float MaxHeight = CapHH()*2+MantleProperties.MantleReachHeight;
+	float CosMMWSA = FMath::Cos(FMath::DegreesToRadians(MantleProperties.MantleMinWallSteepnessAngle)); // Cosine of MantleMinWallSteepnessAngle
+	float CosMMSA = FMath::Cos(FMath::DegreesToRadians(MantleProperties.MantleMaxSurfaceAngle)); // Cosine of MantleMaxSurfaceAngle
+	float CosMMAA = FMath::Cos(FMath::DegreesToRadians(MantleProperties.MantleMaxAlignmentAngle)); // Cosine of MantleMaxAlignmentAngle
 
 	SLOG("TriedMantle");
 
 	// Check Front Face
 	FHitResult FrontHit;
-	float CheckDistance = FMath::Clamp(Velocity|Fwd,CapR()+30,MantleMaxDistance);
+	float CheckDistance = FMath::Clamp(Velocity|Fwd,CapR()+30,MantleProperties.MantleMaxDistance);
 	FVector FrontStart = BaseLocation+FVector::UpVector*(MaxStepHeight-1);
 	constexpr int8 Iterations = 6; // interactions of line trace increasing it should help mantle to perform on thin geometry
 	for (int8 i = 0; i < Iterations; i++)
@@ -1075,7 +1085,7 @@ bool UCocaineMovementComponent::TryMantle()
 		}
 	}
 	*/
-	MantleTarget = ClearCapLocation+(MantleTargetOffset+FVector::ForwardVector);
+	MantleProperties.MantleTarget = ClearCapLocation+(MantleProperties.MantleTargetOffset+FVector::ForwardVector);
 	return true;
 }
 
@@ -1085,7 +1095,8 @@ void UCocaineMovementComponent::EnterMantle(EMovementMode PrevMode, ECustomMovem
 
 void UCocaineMovementComponent::ExitMantle()
 {
-	MantleTarget = FVector::ZeroVector;
+	MantleProperties.MantleTarget = FVector::ZeroVector;
+	AddBoost(CMOVE_Mantle);
 	
 }
 //unfortunately, Mantle is not network safe, but it's unnecessary in this game. Might fix it later (maybe)
@@ -1113,7 +1124,7 @@ void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 		const float timeTick = GetSimulationTimeStep(remainingTime, Iterations);
 		remainingTime -= timeTick;
 		const FVector OldLocation = UpdatedComponent->GetComponentLocation();
-		FVector ToTarget = MantleTarget - OldLocation;
+		FVector ToTarget = MantleProperties.MantleTarget - OldLocation;
 		const float Distance = ToTarget.Size();
 		constexpr float Tolerance = 20.f;
 	
@@ -1126,7 +1137,7 @@ void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 			return;
 		}
 		ToTarget.Normalize();
-		const FVector DesiredVelocity = ToTarget * MantleMaxSpeed;
+		const FVector DesiredVelocity = ToTarget * MantleProperties.MantleMaxSpeed;
 
 		Velocity = FMath::VInterpTo(Velocity, DesiredVelocity, timeTick, 8.f);
  
@@ -1156,7 +1167,7 @@ void UCocaineMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
 			break; 
 		}
  
-		if (FVector::Dist(NewLocation, MantleTarget) < 10.f)
+		if (FVector::Dist(NewLocation, MantleProperties.MantleTarget) < 10.f)
 		{
 			Velocity = FVector::ZeroVector;
 			CharacterOwner->SetActorEnableCollision(true);
@@ -1192,8 +1203,8 @@ bool UCocaineMovementComponent::TryGrind()
 	const FVector TraceStart {GetActorFeetLocation()};
 	const FVector TraceEnd {TraceStart + FVector::DownVector};
 	constexpr ECollisionChannel GrindCollisionChannel {ECC_GameTraceChannel3};
-	GetWorld()->SweepSingleByChannel(Hit, TraceStart, TraceEnd, FQuat::Identity,GrindCollisionChannel,FCollisionShape::MakeSphere(GrindDetectionRadius));
-	SPHERE(TraceStart,GrindDetectionRadius,FColor::Red);
+	GetWorld()->SweepSingleByChannel(Hit, TraceStart, TraceEnd, FQuat::Identity,GrindCollisionChannel,FCollisionShape::MakeSphere(GrindProperties.GrindDetectionRadius));
+	SPHERE(TraceStart,GrindProperties.GrindDetectionRadius,FColor::Red);
 	if (!Hit.bBlockingHit) return false;
 	SLOG("Grind Hit")
 
@@ -1213,14 +1224,14 @@ bool UCocaineMovementComponent::TryGrind()
 	const FVector CharacterHeightOffset {GrindSplineTransform.GetUnitAxis(EAxis::Z)*CapHH()};
 	GrindSplineTransform.AddToTranslation(CharacterHeightOffset);
 	
-	if (FVector::DistSquared(GrindSplineTransform.GetLocation(),CharacterLocation) > GrindDetectionRadiusSquared) return false;
+	if (FVector::DistSquared(GrindSplineTransform.GetLocation(),CharacterLocation) > GrindProperties.GrindDetectionRadiusSquared) return false;
 	
-	SPHERE(GrindSplineTransform.GetLocation(),GrindDetectionRadius,FColor::Green);
+	SPHERE(GrindSplineTransform.GetLocation(),GrindProperties.GrindDetectionRadius,FColor::Green);
 	
 	for (float Distance = 0.0f; Distance<=GrindSpline->GetSplineLength();Distance+=30.f)
 	{
 		const FVector SphereLocation = GrindSpline->GetLocationAtDistanceAlongSpline(Distance,ESplineCoordinateSpace::World);
-		SPHERE(SphereLocation,GrindDetectionRadius,FColor::Cyan);
+		SPHERE(SphereLocation,GrindProperties.GrindDetectionRadius,FColor::Cyan);
 	}
 	
 	//save to struct
@@ -1232,11 +1243,11 @@ bool UCocaineMovementComponent::TryGrind()
 		
 		if (GrindState.bGrindingForward)
 		{
-			GrindState.DistanceAlongGrind += GrindSpeed*GrindState.MoveToGrindEntryPointDuration;
+			GrindState.DistanceAlongGrind += GrindProperties.GrindSpeed*GrindState.MoveToGrindEntryPointDuration;
 		}
 		else
 		{
-			GrindState.DistanceAlongGrind -= GrindSpeed*GrindState.MoveToGrindEntryPointDuration;
+			GrindState.DistanceAlongGrind -= GrindProperties.GrindSpeed*GrindState.MoveToGrindEntryPointDuration;
 		}
 		
 		if (GrindState.GrindSplineComponent->IsClosedLoop())
@@ -1267,11 +1278,13 @@ bool UCocaineMovementComponent::TryGrind()
 
 void UCocaineMovementComponent::EnterGrind(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
-	GrindState.CurrentGrindSpeed=GrindStartingSpeed;
+	GrindState.CurrentGrindSpeed=GrindProperties.GrindStartingSpeed;
 }
 
 void UCocaineMovementComponent::ExitGrind()
 {
+	CocaineCharacterOwner->SetActorRotation(FRotator::ZeroRotator);
+	AddBoost(CMOVE_Grind);
 	CharacterOwner->MoveIgnoreActorRemove(GrindState.GrindingRail.Get());
 	GrindState.GrindingRail=nullptr;
 	GrindState.GrindSplineComponent=nullptr;
@@ -1301,7 +1314,7 @@ void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
 	}
 	else
 	{
-		GrindState.CurrentGrindSpeed = FMath::Clamp(GrindState.CurrentGrindSpeed+GrindSpeedGain,0.f,GrindMaxSpeed);
+		GrindState.CurrentGrindSpeed = FMath::Clamp(GrindState.CurrentGrindSpeed+GrindProperties.GrindSpeedGain,0.f,GrindProperties.GrindMaxSpeed);
 		SLOG(FString::Printf(TEXT("Grind Speed: %f"),GrindState.CurrentGrindSpeed))
 		if (GrindState.bGrindingForward)
 		{
@@ -1319,7 +1332,7 @@ void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
 		{
 			bShouldContinueGrinding = false;
 			NewRotation = UpdatedComponent->GetComponentQuat();
-			NewLocation = LastLocation+UpdatedComponent->GetForwardVector()*GrindSpeed*DeltaTime;
+			NewLocation = LastLocation+UpdatedComponent->GetForwardVector()*GrindProperties.GrindSpeed*DeltaTime;
 		}
 		else
 		{
@@ -1360,7 +1373,7 @@ bool UCocaineMovementComponent::CanKick() const
 {
 	const auto Params = CocaineCharacterOwner->GetIgnoreCharacterParams();
 	const FVector TraceStart = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetComponentLocation();
-	const FVector TraceEnd = TraceStart + CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*KickRange;
+	const FVector TraceEnd = TraceStart + CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*KickProperties.KickRange;
     FHitResult Hit{};
     bool bHit = GetWorld()->LineTraceSingleByProfile(Hit, TraceStart, TraceEnd, "BlockAll",Params);
     LINE(TraceStart,TraceEnd,FColor::Red);
@@ -1373,7 +1386,7 @@ void UCocaineMovementComponent::PerformKick()
 	KickStartTime = GetTS();
 	FVector KickDirection = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*-1.f;
 	//KickDirection.Normalize();
-	KickDirection*=KickForce;
+	KickDirection*=KickProperties.KickForce;
 	SLOG(FString::Printf(TEXT("Kick Direction: %s"), *KickDirection.ToString()))
 	CocaineCharacterOwner->LaunchCharacter(KickDirection,true,true);
 	
@@ -1422,7 +1435,7 @@ void UCocaineMovementComponent::SprintReleased()
 void UCocaineMovementComponent::CrouchPressed()
 {
 	bWantsToCrouch=!bWantsToCrouch;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle_EnterProne,this,&UCocaineMovementComponent::TryEnterProne,Prone_EnterHoldDuration);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle_EnterProne,this,&UCocaineMovementComponent::TryEnterProne,ProneProperties.Prone_EnterHoldDuration);
 }
 void UCocaineMovementComponent::CrouchReleased()
 {
@@ -1431,13 +1444,13 @@ void UCocaineMovementComponent::CrouchReleased()
 
 void UCocaineMovementComponent::DashPressed()
 {
-	if (const float CurrentTime = GetTS(); CurrentTime-DashStartTime>=DashCooldownDuration)
+	if (const float CurrentTime = GetTS(); CurrentTime-DashStartTime>=DashProperties.DashCooldownDuration)
 	{
 		Safe_bWantsToDash=true;
 	}
 	else
 	{
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_DashCooldown,this,&UCocaineMovementComponent::OnDashCooldownFinished,DashCooldownDuration-(CurrentTime-DashStartTime));
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_DashCooldown,this,&UCocaineMovementComponent::OnDashCooldownFinished,DashProperties.DashCooldownDuration-(CurrentTime-DashStartTime));
 	}
 }
 void UCocaineMovementComponent::DashReleased()
@@ -1448,13 +1461,13 @@ void UCocaineMovementComponent::DashReleased()
 
 void UCocaineMovementComponent::KickPressed()
 {
-	if (const float CurrentTime = GetTS(); CurrentTime-KickStartTime>=KickCooldownDuration)
+	if (const float CurrentTime = GetTS(); CurrentTime-KickStartTime>=KickProperties.KickCooldownDuration)
 	{
 		Safe_bWantsToKick=true;
 	}
 	else
 	{
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_KickCooldown,this,&UCocaineMovementComponent::OnKickCooldownFinished,KickCooldownDuration-(CurrentTime-KickStartTime));
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_KickCooldown,this,&UCocaineMovementComponent::OnKickCooldownFinished,KickProperties.KickCooldownDuration-(CurrentTime-KickStartTime));
 	}
 }
 
@@ -1491,24 +1504,24 @@ void UCocaineMovementComponent::OnRep_DashStart()
 {
 	if (Proxy_bDashStart)
 	{
-		if (bRootMotionDash) CharacterOwner->PlayAnimMontage(DashMontage);
+		if (bRootMotionDash) CharacterOwner->PlayAnimMontage(DashProperties.DashMontage);
 		DashStartDelegate.Broadcast();
 	}
 }
 
 void UCocaineMovementComponent::OnRep_ShortMantle()
 {
-	if (ProxyShortMantleMontage)
+	if (MantleProperties.ProxyShortMantleMontage)
 	{
-		CharacterOwner->PlayAnimMontage(ProxyShortMantleMontage);
+		CharacterOwner->PlayAnimMontage(MantleProperties.ProxyShortMantleMontage);
 	}
 }
 
 void UCocaineMovementComponent::OnRep_TallMantle()
 {
-	if (ProxyTallMantleMontage)
+	if (MantleProperties.ProxyTallMantleMontage)
 	{
-		CharacterOwner->PlayAnimMontage(ProxyTallMantleMontage);
+		CharacterOwner->PlayAnimMontage(MantleProperties.ProxyTallMantleMontage);
 	}
 }
 

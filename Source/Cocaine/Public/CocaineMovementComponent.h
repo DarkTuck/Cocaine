@@ -44,6 +44,95 @@ struct FGrindState
 	bool bMovingToGrindEntryPoint {true};
 };
 
+USTRUCT()
+struct FSlideProperties
+{
+	GENERATED_BODY()
+		
+	// slide
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float MinSlideSpeed=400.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float MaxSlideSpeed=400.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideEnterImpulse=400.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideGravityForce=4000.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideFrictionFactor=.06f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float BrakingDecelerationSliding=1000.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideSpeedBoost = 0.f;
+	
+};
+
+USTRUCT()
+struct FProneProperties
+{
+	GENERATED_BODY()
+	// prone
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float Prone_EnterHoldDuration=2.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneSlideEnterImpulse=300.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneMaxSpeed=300.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float BrakingDecelerationProning=2500.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneSpeedBoost = 0.f;
+	
+};
+
+USTRUCT()
+struct FDashProperties
+{
+	GENERATED_BODY()
+	// Dash
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float DashImpulse=1000.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float DashCooldownDuration=1.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float AuthDashCooldownDuration=.9f;
+	//Dash RootMotion
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash|RootMotion") UAnimMontage* DashMontage;
+};
+
+USTRUCT()
+struct FMantleProperties
+{
+	GENERATED_BODY()
+	// Mantle
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxDistance = 200;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleReachHeight = 50;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MinMantleDepth= 30;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMinWallSteepnessAngle = 75;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxSurfaceAngle=40;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxAlignmentAngle=45;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxSpeed=10000;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") FVector MantleTargetOffset=FVector(15,0,15);
+#pragma region Deprecated
+	UAnimMontage* TallMantleMontage;
+	UAnimMontage* TransitionTallMantleMontage;
+	UAnimMontage* ProxyTallMantleMontage;
+	UAnimMontage* ShortMantleMontage;
+	UAnimMontage* TransitionShortMantleMontage;
+	UAnimMontage* ProxyShortMantleMontage;
+#pragma endregion
+	UPROPERTY() FVector MantleTarget;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleSpeedBoost = 0.f;
+};
+
+USTRUCT()
+struct FGrindProperties
+{
+	GENERATED_BODY()
+	// Grind
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindDetectionRadius = 50;
+	float GrindDetectionRadiusSquared;
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind",meta=(DeprecatedProperty)) float GrindSpeed = 100;
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindStartingSpeed = 100;
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindMaxSpeed = 1000;
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindSpeedBoost = 2000.f;
+	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindSpeedGain = 5.f;
+};
+USTRUCT()
+struct FKickProperties
+{
+	GENERATED_BODY()
+	// Kick
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|Kick") float KickForce = 100;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|Kick") float KickCooldownDuration = .5f;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float AuthKickCooldownDuration = KickCooldownDuration-0.1f;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float KickRange=200.f;
+};
 UCLASS()
 class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 {
@@ -94,63 +183,17 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") bool bRootMotionDash=false;
 	constexpr static float DefaultSpeedBoost = 0.f;
 	
-	// slide
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float MinSlideSpeed=400.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float MaxSlideSpeed=400.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideEnterImpulse=400.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideGravityForce=4000.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideFrictionFactor=.06f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float BrakingDecelerationSliding=1000.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideSpeedBoost = DefaultSpeedBoost;
+	// Properties Structs
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FSlideProperties SlideProperties{};
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FProneProperties ProneProperties{};
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FDashProperties DashProperties{};
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FMantleProperties MantleProperties{};
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FGrindProperties GrindProperties{};
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FKickProperties KickProperties{};
 	
-	// prone
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float Prone_EnterHoldDuration=2.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneSlideEnterImpulse=300.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneMaxSpeed=300.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float BrakingDecelerationProning=2500.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Prone") float ProneSpeedBoost = DefaultSpeedBoost;
-	
-	// Dash
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float DashImpulse=1000.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float DashCooldownDuration=1.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float AuthDashCooldownDuration=.9f;
-	//Dash RootMotion
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash|RootMotion") UAnimMontage* DashMontage;
-	
-	// Mantle
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxDistance = 200;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleReachHeight = 50;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MinMantleDepth= 30;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMinWallSteepnessAngle = 75;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxSurfaceAngle=40;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxAlignmentAngle=45;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleMaxSpeed=10000;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") FVector MantleTargetOffset=FVector(15,0,15);
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* TallMantleMontage;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* TransitionTallMantleMontage;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* ProxyTallMantleMontage;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* ShortMantleMontage;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* TransitionShortMantleMontage;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle|Animations") UAnimMontage* ProxyShortMantleMontage;
-	UPROPERTY() FVector MantleTarget;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Mantle") float MantleSpeedBoost = DefaultSpeedBoost;
-	
-	// Grind
-	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindDetectionRadius = 50;
-	float GrindDetectionRadiusSquared;
-	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind",meta=(DeprecatedProperty)) float GrindSpeed = 100;
-	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindStartingSpeed = 100;
-	UPROPERTY(EditAnywhere,Category="MovementSettings|Grind") float GrindMaxSpeed = 1000;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Grind") float GrindSpeedBoost = DefaultSpeedBoost;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Grind") float GrindSpeedGain = 5.f;
-
 	UPROPERTY() FGrindState GrindState{};
 	
-	// Kick
-	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|Kick") float KickForce = 100;
-	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|Kick") float KickCooldownDuration = .5f;
-	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float AuthKickCooldownDuration = .4f;
-	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float KickRange=200.f;
+
 #pragma endregion 
 #pragma region Transient
 	UPROPERTY(Transient) ACocaineCharacter* CocaineCharacterOwner;
@@ -196,7 +239,7 @@ public:
     virtual bool CanCrouchInCurrentState() const override;
 	virtual float GetMaxSpeed() const override;
 	virtual float GetMaxBrakingDeceleration() const override;
-	float GetSpeedBoost() const;
+	float GetSpeedBoost(uint8 Mode) const;
 	virtual bool CanAttemptJump() const override;
 	virtual  void AddInputVector(FVector WorldVector, bool bForce = false) override;
 protected:
@@ -214,6 +257,7 @@ protected:
 	
 private:
 	void UpdateMult() const;
+	void AddBoost(uint8 Mode) const;
 	// slide	
 private:
 	void EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode);
