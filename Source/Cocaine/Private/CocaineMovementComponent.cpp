@@ -292,6 +292,7 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	// Kick
 	if (Safe_bWantsToKick&&CanKick())
 	{
+		KickedEnemy();
 		if (!bAuthProxy||GetTS()-KickStartTime>KickProperties.AuthKickCooldownDuration)
 		{
 			PerformKick();
@@ -1378,6 +1379,31 @@ bool UCocaineMovementComponent::CanKick() const
     bool bHit = GetWorld()->LineTraceSingleByProfile(Hit, TraceStart, TraceEnd, "BlockAll",Params);
     LINE(TraceStart,TraceEnd,FColor::Red);
 	return Hit.IsValidBlockingHit();
+}
+
+bool UCocaineMovementComponent::KickedEnemy()
+{
+	const auto Params = CocaineCharacterOwner->GetIgnoreCharacterParams();
+	const FVector TraceStart = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetComponentLocation();
+	const FVector TraceEnd = TraceStart + CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*KickProperties.KickRange;
+	FHitResult Hit{};
+	bool EnemyHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd,ECC_EngineTraceChannel4,Params);
+	if (ACharacter* HitEnemy = Cast<ACharacter>(Hit.GetActor())) PerformKickOnEnemy(HitEnemy);
+	return Hit.IsValidBlockingHit();
+}
+
+void UCocaineMovementComponent::PerformKickOnEnemy(ACharacter* HitEnemy)
+{
+	SLOG("Perform Kick On Enemy")
+	KickStartTime = GetTS();
+	//FVector KickDirection = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector();
+	FVector KickDirection = (HitEnemy->GetActorLocation()-CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()).GetSafeNormal();
+	//KickDirection.Normalize();
+	KickDirection*=KickProperties.KickForce;
+	SLOG(FString::Printf(TEXT("Kick Direction: %s"), *KickDirection.ToString()))
+	HitEnemy->LaunchCharacter(KickDirection,true,true);
+	
+	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(EMultType::KickedEnemy);
 }
 
 void UCocaineMovementComponent::PerformKick()

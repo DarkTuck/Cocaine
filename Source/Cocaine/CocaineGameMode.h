@@ -25,6 +25,7 @@ enum EMultType
 	Slide,
 	Jump,
 	Kick,
+	KickedEnemy,
 	Dash,
 	Grind,
 	Mantle,
@@ -49,15 +50,18 @@ UCLASS(abstract)
 class ACocaineGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int SlideMultValue=20;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int JumpMultValue=20;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KickMultValue=20;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int DashMultValue=20;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrindMultValue=20;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int MantleMultValue=20;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KillMultValue=20;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrappleMultValue=20;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int HeadshotMultValue=20;
+	constexpr static int DefaultMultValue=20;
+	
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int SlideMultValue=DefaultMultValue;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int JumpMultValue=DefaultMultValue;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KickMultValue=DefaultMultValue;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KickedEnemyMultValue=DefaultMultValue;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int DashMultValue=DefaultMultValue;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrindMultValue=DefaultMultValue;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int MantleMultValue=DefaultMultValue;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KillMultValue=DefaultMultValue;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrappleMultValue=DefaultMultValue;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int HeadshotMultValue=DefaultMultValue;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int BaseStoredMultDrainValue=10;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int MultThreshold=100;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float MultFadeDuration=5;
@@ -136,6 +140,7 @@ private:
 	{Slide,&SlideMultValue},
 		{Jump,&JumpMultValue},
 		{Kick,&KickMultValue},
+		{KickedEnemy,&KickedEnemyMultValue},
 		{Dash,&DashMultValue},
 		{Grind,&GrindMultValue},
 		{Mantle,&MantleMultValue},
@@ -147,6 +152,7 @@ private:
 		{Slide,"Slide"},
 		{Jump,"Jump"},
 		{Kick,"Kick"},
+		{KickedEnemy,"Kicked Enemy"},
 		{Dash,"Dash"},
 		{Grind,"Grind"},
 		{Mantle,"Mantle"},

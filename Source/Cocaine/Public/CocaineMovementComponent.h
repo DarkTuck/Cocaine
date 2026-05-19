@@ -301,7 +301,9 @@ private:
 private:
 	void OnKickCooldownFinished();
 	bool CanKick() const;
+	bool KickedEnemy();
 	void PerformKick();
+	void PerformKickOnEnemy(ACharacter* HitEnemy);
 	
 	// Flying
 public:
