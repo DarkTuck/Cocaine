@@ -1397,11 +1397,12 @@ void UCocaineMovementComponent::PerformKickOnEnemy(ACharacter* HitEnemy)
 	SLOG("Perform Kick On Enemy")
 	KickStartTime = GetTS();
 	//FVector KickDirection = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector();
-	FVector KickDirection = (HitEnemy->GetActorLocation()-CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()).GetSafeNormal();
+	FVector KickDirection = (HitEnemy->GetActorLocation()-CocaineCharacterOwner->GetActorLocation()).GetSafeNormal();
+	KickDirection+=FVector::UpVector;
 	//KickDirection.Normalize();
 	KickDirection*=KickProperties.KickForce;
 	SLOG(FString::Printf(TEXT("Kick Direction: %s"), *KickDirection.ToString()))
-	HitEnemy->LaunchCharacter(KickDirection,true,true);
+	HitEnemy->LaunchCharacter(KickDirection,false,false);
 	
 	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(EMultType::KickedEnemy);
 }
