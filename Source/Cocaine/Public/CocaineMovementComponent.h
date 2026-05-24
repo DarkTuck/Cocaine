@@ -78,6 +78,7 @@ struct FDashProperties
 {
 	GENERATED_BODY()
 	// Dash
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash",DisplayName="Can Dash in Air") bool bDashInAir;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float DashImpulse=1000.f;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float DashCooldownDuration=1.f;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Dash") float AuthDashCooldownDuration=.9f;
@@ -132,6 +133,8 @@ struct FKickProperties
 	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|Kick") float KickCooldownDuration = .5f;
 	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float AuthKickCooldownDuration = KickCooldownDuration-0.1f;
 	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float KickRange=200.f;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float KickDamage = 10.f;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") TSubclassOf<UDamageType> KickDamageType;;
 };
 UCLASS()
 class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent

@@ -9,6 +9,7 @@
 #include "DrawDebugHelpers.h"
 #include "GrindingRail.h"
 #include "Camera/CameraComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Helper Macros
 #if 1
@@ -925,13 +926,12 @@ void UCocaineMovementComponent::OnDashCooldownFinished()
 
 bool UCocaineMovementComponent::CanDash() const
 {
-	return IsWalking() && !IsCrouching() /*|| IsFalling()*/; //to uncomment if player could dash in the air (probably should be variable but for now dash can end up as unused code)
+	return (IsWalking() && !IsCrouching()) || (IsFalling() && DashProperties.bDashInAir); 
 }
 
 void UCocaineMovementComponent::PerformDash()
 {
 	DashStartTime=GetTS();
-	
 	FVector DashDirection = (Acceleration.IsNearlyZero() ? UpdatedComponent->GetForwardVector() : Acceleration).GetSafeNormal2D();
 	DashDirection += FVector::UpVector * .1f;
 	Velocity = DashProperties.DashImpulse * (DashDirection + FVector::UpVector * .1f);
@@ -1403,7 +1403,7 @@ void UCocaineMovementComponent::PerformKickOnEnemy(ACharacter* HitEnemy)
 	KickDirection*=KickProperties.KickForce;
 	SLOG(FString::Printf(TEXT("Kick Direction: %s"), *KickDirection.ToString()))
 	HitEnemy->LaunchCharacter(KickDirection,false,false);
-	
+	UGameplayStatics::ApplyDamage(HitEnemy,KickProperties.KickDamage,CocaineCharacterOwner->GetController(),CocaineCharacterOwner,KickProperties.KickDamageType);
 	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(EMultType::KickedEnemy);
 }
 
