@@ -64,6 +64,15 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if (bIsGodMode)
+	{
+		GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, TEXT("God mode active, damage ignored"));
+		return 0.0f;
+	}
+	
+	bIsGodMode = true;
+	GetWorld()->GetTimerManager().SetTimer(GodModeTimer, this, &AShooterCharacter::EndGodMode, GodModeTime, false);
+	
 	// ignore if already dead
 	if (CurrentHP <= 0.0f)
 	{
@@ -283,4 +292,11 @@ void AShooterCharacter::OnRespawn()
 {
 	// destroy the character to force the PC to respawn
 	Destroy();
+}
+
+void AShooterCharacter::EndGodMode()
+{
+	bIsGodMode = false;
+	GetWorld()->GetTimerManager().ClearTimer(GodModeTimer);
+	GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, TEXT("God mode ended"));
 }

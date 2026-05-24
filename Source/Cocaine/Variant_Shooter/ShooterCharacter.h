@@ -71,7 +71,13 @@ protected:
 	UPROPERTY(EditAnywhere, Category ="Destruction", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
 	float RespawnTime = 5.0f;
 
+	UPROPERTY(EditAnywhere, Category ="Destruction", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
+	float GodModeTime = 5.0f;
+	
+	bool bIsGodMode = false;
+	
 	FTimerHandle RespawnTimer;
+	FTimerHandle GodModeTimer;
 
 public:
 
@@ -101,7 +107,7 @@ public:
 
 	/** Handle incoming damage */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
-
+	
 public:
 
 	/** Handles start firing input */
@@ -163,4 +169,6 @@ protected:
 
 	/** Called from the respawn timer to destroy this character and force the PC to respawn */
 	void OnRespawn();
+	
+	void EndGodMode();
 };

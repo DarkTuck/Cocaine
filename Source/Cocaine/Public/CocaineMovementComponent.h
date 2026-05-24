@@ -221,7 +221,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	float TransitionQueuedMontageSpeed;
 	int TransitionRMS_ID;
 	
-	FVector StoredInput;
+//	FVector StoredInput;
 #pragma endregion
 
 	// Replication
