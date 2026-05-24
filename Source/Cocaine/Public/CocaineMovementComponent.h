@@ -220,6 +220,8 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(Transient) UAnimMontage*TransitionQueuedMontage;
 	float TransitionQueuedMontageSpeed;
 	int TransitionRMS_ID;
+	
+	FVector StoredInput;
 #pragma endregion
 
 	// Replication

@@ -238,6 +238,7 @@ bool UCocaineMovementComponent::CanAttemptJump() const
 
 void UCocaineMovementComponent::AddInputVector(FVector WorldVector, bool bForce)
 {
+	StoredInput = WorldVector;
 	if (!IsCustomMovementMode(CMOVE_Grind))
 	{
 		Super::AddInputVector(WorldVector,bForce);
@@ -933,7 +934,9 @@ void UCocaineMovementComponent::PerformDash()
 {
 	DashStartTime=GetTS();
 	FVector DashDirection = (Acceleration.IsNearlyZero() ? UpdatedComponent->GetForwardVector() : Acceleration).GetSafeNormal2D();
+//	FVector DashDirection = StoredInput.GetSafeNormal2D();
 	DashDirection += FVector::UpVector * .1f;
+	DashDirection += StoredInput;
 	Velocity = DashProperties.DashImpulse * (DashDirection + FVector::UpVector * .1f);
 
 	const FQuat NewRotation = FRotationMatrix::MakeFromXZ(DashDirection,FVector::UpVector).ToQuat();
