@@ -8,6 +8,7 @@
 #include "Net/UnrealNetwork.h"
 #include "DrawDebugHelpers.h"
 #include "GrindingRail.h"
+#include "ShooterAIController.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -1400,14 +1401,23 @@ void UCocaineMovementComponent::PerformKickOnEnemy(ACharacter* HitEnemy)
 	SLOG("Perform Kick On Enemy")
 	KickStartTime = GetTS();
 	//FVector KickDirection = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector();
+	
 	FVector KickDirection = (HitEnemy->GetActorLocation()-CocaineCharacterOwner->GetActorLocation()).GetSafeNormal();
 	KickDirection+=FVector::UpVector;
+	
 	//KickDirection.Normalize();
 	KickDirection*=KickProperties.KickForce;
 	SLOG(FString::Printf(TEXT("Kick Direction: %s"), *KickDirection.ToString()))
+	
+	// kick it
 	HitEnemy->LaunchCharacter(KickDirection,false,false);
+	// Stun it
+	CastChecked<AShooterAIController>(HitEnemy->GetController())->GetStunned(KickProperties.KickStunTime);
+	// Damage it
 	UGameplayStatics::ApplyDamage(HitEnemy,KickProperties.KickDamage,CocaineCharacterOwner->GetController(),CocaineCharacterOwner,KickProperties.KickDamageType);
+	// Score it
 	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(EMultType::KickedEnemy);
+	// Move on
 }
 
 void UCocaineMovementComponent::PerformKick()

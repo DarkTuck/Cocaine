@@ -22,6 +22,7 @@ class COCAINE_API AShooterNPC : public ACocaineCharacter, public IShooterWeaponH
 	GENERATED_BODY()
 
 public:
+	bool bIsStunned = false;
 
 	/** Current HP for this character. It dies if it reaches zero through damage */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage")
@@ -97,6 +98,8 @@ protected:
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
+	
+	virtual void PossessedBy(AController* NewController) override;
 
 	/** Gameplay cleanup */
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -147,6 +150,8 @@ protected:
 
 	/** Called after death to destroy the actor */
 	void DeferredDestruction();
+	
+	void OnStunned(bool bStunned);
 
 public:
 

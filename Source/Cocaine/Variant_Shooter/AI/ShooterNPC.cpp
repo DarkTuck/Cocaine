@@ -2,6 +2,8 @@
 
 
 #include "Variant_Shooter/AI/ShooterNPC.h"
+
+#include "ShooterAIController.h"
 #include "ShooterWeapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Camera/CameraComponent.h"
@@ -21,10 +23,20 @@ void AShooterNPC::BeginPlay()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.Instigator = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;	
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	Weapon = GetWorld()->SpawnActor<AShooterWeapon>(WeaponClass, GetActorTransform(), SpawnParams);
 	GameMode = Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode());
+}
+
+void AShooterNPC::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	if (AShooterAIController* AIController = Cast<AShooterAIController>(NewController))
+	{
+		AIController->StunnedDelegate.BindUObject(this, &AShooterNPC::OnStunned);
+	}
 }
 
 void AShooterNPC::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -157,7 +169,7 @@ void AShooterNPC::OnWeaponDeactivated(AShooterWeapon* InWeapon)
 void AShooterNPC::OnSemiWeaponRefire()
 {
 	// are we still shooting?
-	if (bIsShooting)
+	if (bIsShooting && !bIsStunned)
 	{
 		// fire the weapon
 		Weapon->StartFiring();
@@ -206,14 +218,22 @@ void AShooterNPC::DeferredDestruction()
 	Destroy();
 }
 
+void AShooterNPC::OnStunned(const bool bStunned)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("Stunned %d"), bStunned));
+	bIsStunned = bStunned;
+}
+
 void AShooterNPC::StartShooting(AActor* ActorToShoot)
 {
+	if (bIsStunned) return;
+	
 	// save the aim target
 	CurrentAimTarget = ActorToShoot;
 
 	// raise the flag
 	bIsShooting = true;
-
+	
 	// signal the weapon
 	Weapon->StartFiring();
 }

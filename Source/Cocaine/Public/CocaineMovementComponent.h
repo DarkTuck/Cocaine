@@ -134,7 +134,8 @@ struct FKickProperties
 	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float AuthKickCooldownDuration = KickCooldownDuration-0.1f;
 	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float KickRange=200.f;
 	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float KickDamage = 10.f;
-	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") TSubclassOf<UDamageType> KickDamageType;;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float KickStunTime = 5.f;
+	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") TSubclassOf<UDamageType> KickDamageType;
 };
 UCLASS()
 class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent

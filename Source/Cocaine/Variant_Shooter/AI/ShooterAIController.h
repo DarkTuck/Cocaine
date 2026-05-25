@@ -12,6 +12,7 @@ struct FAIStimulus;
 
 DECLARE_DELEGATE_TwoParams(FShooterPerceptionUpdatedDelegate, AActor*, const FAIStimulus&);
 DECLARE_DELEGATE_OneParam(FShooterPerceptionForgottenDelegate, AActor*);
+DECLARE_DELEGATE_OneParam(FStunnedDelegate, bool);
 
 /**
  *  Simple AI Controller for a first person shooter enemy
@@ -44,8 +45,13 @@ public:
 	FShooterPerceptionUpdatedDelegate OnShooterPerceptionUpdated;
 
 	/** Called when an AI perception has been forgotten. StateTree task delegate hook */
-	FShooterPerceptionForgottenDelegate OnShooterPerceptionForgotten;
-
+	FShooterPerceptionForgottenDelegate OnShooterPerceptionForgotten; 
+public:
+	FStunnedDelegate StunnedDelegate;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stun")
+	float StunScale = 1.f;
+	FTimerHandle StunTimerHandle;
 public:
 
 	/** Constructor */
@@ -82,4 +88,12 @@ protected:
 	/** Called when the AI perception component forgets a given actor */
 	UFUNCTION()
 	void OnPerceptionForgotten(AActor* Actor);
+	
+public:
+	UFUNCTION()
+	void GetStunned(const float Duration);
+
+protected:
+	UFUNCTION()
+	void OnStunEnd();
 };

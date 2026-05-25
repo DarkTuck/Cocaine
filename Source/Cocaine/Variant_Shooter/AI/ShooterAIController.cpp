@@ -72,3 +72,20 @@ void AShooterAIController::OnPerceptionForgotten(AActor* Actor)
 	// pass the data to the StateTree delegate hook
 	OnShooterPerceptionForgotten.ExecuteIfBound(Actor);
 }
+
+void AShooterAIController::GetStunned(const float Duration)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("AI %s stunned for %f seconds"), *GetName(), Duration));
+	StateTreeAI->PauseLogic(FString("Stunned"));
+	ClearCurrentTarget();
+	StunnedDelegate.ExecuteIfBound(true);
+	GetWorld()->GetTimerManager().SetTimer(StunTimerHandle, this, &AShooterAIController::OnStunEnd, Duration*StunScale, false);
+}
+
+void AShooterAIController::OnStunEnd()
+{
+	StunnedDelegate.ExecuteIfBound(false);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("AI %s stunned ended"), *GetName()));
+	StateTreeAI->ResumeLogic(FString("Stunned End"));
+	GetWorld()->GetTimerManager().ClearTimer(StunTimerHandle);
+}
