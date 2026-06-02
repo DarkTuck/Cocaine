@@ -131,6 +131,7 @@ void ACocaineCharacter::BeginPlay()
 void ACocaineCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	
 	if (bIsGrappling)
 	{
 		GrappleCable->EndLocation=GetActorTransform().InverseTransformPosition(GrapplingPoint);
@@ -143,6 +144,7 @@ void ACocaineCharacter::Tick(float DeltaSeconds)
 		GetCharacterMovement()->AddForce(Direction);
 		//GetCharacterMovement()->AddForce((GrapplingPoint-GetActorLocation()).GetSafeNormal()*GrappleForce);
 	}
+	
 }
 
 FCollisionQueryParams ACocaineCharacter::GetIgnoreCharacterParams() const
@@ -159,6 +161,7 @@ FCollisionQueryParams ACocaineCharacter::GetIgnoreCharacterParams() const
 
 void ACocaineCharacter::Interact()
 {
+	
 	const FVector Start{GetCapsuleComponent()->GetComponentLocation()};
 	const FVector End{Start+(MaxLineDistance*FirstPersonCameraComponent->GetForwardVector())};
 	DrawDebugLine(GetWorld(),Start,End,FColor::Emerald);
@@ -172,16 +175,21 @@ void ACocaineCharacter::Interact()
 		GrappleCable->SetVisibility(true);
 		GrapplingPoint=Hit.ImpactPoint;
 	}
+	
+	//GetCocaineCharacterMovement()->GrapplePressed();
 }
 
 void ACocaineCharacter::StopInteract()
 {
+	
 	bIsGrappling=false;
 	if (!GetCharacterMovement()->IsFalling())
 	{
 		GetCocaineCharacterMovement()->SetFlying(false);
 	}
 	GrappleCable->SetVisibility(false);
+	
+	//GetCocaineCharacterMovement()->GrappleReleased();
 }
 
 void ACocaineCharacter::PerformKick()

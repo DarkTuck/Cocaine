@@ -193,6 +193,8 @@ float UCocaineMovementComponent::GetMaxSpeed() const
 		return MaxSprintSpeed;
 	case CMOVE_Grind:
 		return GrindProperties.GrindMaxSpeed;
+	case CMOVE_Grapple:
+		return GrappleProperties.GrappleMaxSpeed;
 	default:
 ;		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement Mode"));
 		return -1.f;
@@ -227,6 +229,8 @@ float UCocaineMovementComponent::GetSpeedBoost(uint8 Mode = CMOVE_None) const
 			return MantleProperties.MantleSpeedBoost;
 		case CMOVE_Grind:
 			return GrindProperties.GrindSpeedBoost;
+		case CMOVE_Grapple:
+			return GrappleProperties.GrappleSpeedBoost;
 		default:
 			UE_LOG(LogTemp,Warning,TEXT("Invalid Movement Mode"));
 			return -1.f;
@@ -350,6 +354,15 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	{
 		SetMovementMode(MOVE_Custom,CMOVE_Grind);
 	}
+	
+	// Grapple
+	if (Safe_bWantsToGrapple)
+	{
+		if (TryGrapple())
+		{
+			SetMovementMode(MOVE_Custom,CMOVE_Grapple);
+		}
+	}
 
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
 }
@@ -400,6 +413,9 @@ void UCocaineMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 	case CMOVE_Grind:
 		PhysGrind(deltaTime, Iterations);
 		break;
+	case CMOVE_Grapple:
+		PhysGrapple(deltaTime, Iterations);
+		break;
 	default:
 		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement mode!"));
 	}
@@ -418,6 +434,9 @@ void UCocaineMovementComponent::UpdateMult() const
 		break;
 	case CMOVE_Slide:
 		GameMode->AddMult(Slide);
+		break;
+	case CMOVE_Grapple:
+		GameMode->AddMult(Grapple);
 		break;
 	default:
 		break;
@@ -443,11 +462,13 @@ void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMove
  	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Prone) ExitProne();
 	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Mantle) ExitMantle();
 	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Grind) ExitGrind();
+	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Grapple) ExitGrapple();
  	
  	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
  	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
 	if (IsCustomMovementMode(CMOVE_Mantle)) EnterMantle(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
 	if (IsCustomMovementMode(CMOVE_Grind)) EnterGrind(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
+	if (IsCustomMovementMode(CMOVE_Grapple)) EnterGrapple(PreviousMovementMode, (ECustomMovementMode)PreviousMovementMode);
  }
 #pragma endregion
 
@@ -463,6 +484,7 @@ void UCocaineMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMoveme
 
 void UCocaineMovementComponent::ExitSlide()
 {
+	CocaineCharacterOwner->SetActorRotation(FRotator::ZeroRotator);
 	bWantsToCrouch = false;
 	bOrientRotationToMovement = true;
 }
@@ -1439,28 +1461,30 @@ void UCocaineMovementComponent::PerformKickOnEnemy(ACharacter* HitEnemy)
 #pragma region Grapple
 bool UCocaineMovementComponent::TryGrapple()
 {
-	return true;
+	const FVector Start{CocaineCharacterOwner->GetActorLocation()};
+	const FVector End{Start+(GrappleProperties.MaxLineDistance*CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector())};
+	LINE(Start,End,FColor::Emerald);
+	FHitResult Hit;
+	const FCollisionQueryParams Params = CocaineCharacterOwner->GetIgnoreCharacterParams();
+	if (const bool bHasHit {GetWorld()->SweepSingleByChannel(Hit,Start,End,FQuat::Identity,GrappleTraceChanel,FCollisionShape::MakeSphere(100.f),Params)})
+	{
+		GrapplingPoint=Hit.ImpactPoint;
+		return true;
+	}
+	
+	return false;
 }
 
 void UCocaineMovementComponent::EnterGrapple(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
-	const FVector Start{CocaineCharacterOwner->GetActorLocation()};
-	const FVector End{Start+(GrappleProperties.MaxLineDistance*CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector())};
-	DrawDebugLine(GetWorld(),Start,End,FColor::Emerald);
-	
-	FHitResult Hit;
-	if (const bool bHasHit {GetWorld()->SweepSingleByChannel(Hit,Start,End,FQuat::Identity,GrappleTraceChanel,FCollisionShape::MakeSphere(100.f))})
-	{
-		bIsGrappling=true;
-		Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Grapple);
-		// SetFlying(true);
-		GrappleProperties.GrappleCable->SetVisibility(true);
-		GrapplingPoint=Hit.ImpactPoint;
-	}
+	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Grapple);
+	// SetFlying(true);
+	GrappleProperties.GrappleCable->SetVisibility(true);
 }
 
 void UCocaineMovementComponent::ExitGrapple()
 {
+	GrapplingPoint=FVector::ZeroVector;
 	bIsGrappling=false;
 	/*if (!IsFalling())
 	{
@@ -1472,7 +1496,11 @@ void UCocaineMovementComponent::ExitGrapple()
 void UCocaineMovementComponent::PhysGrapple(float DeltaTime, int32 Iterations)
 {
 	GrappleProperties.GrappleCable->EndLocation=GetActorTransform().InverseTransformPosition(GrapplingPoint);
-	Velocity+=Acceleration+(GrapplingPoint-GetActorLocation())*GrappleProperties.GrappleForce;
+	FVector GrappleDirection=GrapplingPoint-GetActorLocation();
+	GrappleDirection.Normalize();
+	GrappleDirection*=GrappleProperties.GrappleForce;
+	const FVector Correction = Acceleration*GrappleProperties.GrappleSteeringForce;
+	AddForce(GrappleDirection+Correction);
 }
 
 
@@ -1556,6 +1584,16 @@ void UCocaineMovementComponent::KickReleased()
 {
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_KickCooldown);
 	Safe_bWantsToKick=false;
+}
+
+void UCocaineMovementComponent::GrapplePressed()
+{
+	Safe_bWantsToGrapple=true;
+}
+
+void UCocaineMovementComponent::GrappleReleased()
+{
+	Safe_bWantsToGrapple=false;
 }
 
 bool UCocaineMovementComponent::IsCustomMovementMode(const ECustomMovementMode InCustomMovementMode) const

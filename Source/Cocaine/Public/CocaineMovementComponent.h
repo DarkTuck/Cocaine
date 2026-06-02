@@ -21,6 +21,7 @@ enum ECustomMovementMode
 	CMOVE_Prone UMETA(DisplayName="Prone"),
 	CMOVE_Mantle UMETA(DisplayName="Mantle"),
 	CMOVE_Grind UMETA(DisplayName="Grind"),
+	CMOVE_Grapple UMETA(DisplayName="Grapple"),
 	CMOVE_MAX 	UMETA(Hidden),
 };
 
@@ -141,12 +142,13 @@ USTRUCT()
 struct FGrappleProperties
 {
 	GENERATED_BODY()
-	UPROPERTY(EditAnywhere,Category ="Grappling")
-	class UCableComponent* GrappleCable;
-	UPROPERTY(EditDefaultsOnly,Category="Grappling")
-	float GrappleForce{1000000.f};
-	UPROPERTY(EditDefaultsOnly,Category="Grappling")
-	float MaxLineDistance {1000.f};
+	// Grapple
+	UPROPERTY(EditAnywhere,Category ="Grappling") UCableComponent* GrappleCable;
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleForce{1000000.f};
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleSteeringForce{500000.f};
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") float MaxLineDistance {1000.f};
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleMaxSpeed{100000.f};
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleSpeedBoost = 0.f;
 };
 UCLASS()
 class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
@@ -222,6 +224,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	bool Safe_bWantsToProne;
 	bool Safe_bWantsToDash;
 	bool Safe_bWantsToKick;
+	bool Safe_bWantsToGrapple;
 	
 	bool Safe_bHadAnimRootMotion;
 	bool Safe_bPrevWantsToCrouch;
@@ -362,6 +365,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable) void KickPressed();
 	UFUNCTION(BlueprintCallable) void KickReleased();
+	
+	UFUNCTION(BlueprintCallable) void GrapplePressed();
+	UFUNCTION(BlueprintCallable) void GrappleReleased();
 	
 	UFUNCTION(BlueprintCallable) bool IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const;
 	UFUNCTION(BlueprintCallable) bool IsMovementMode(EMovementMode InMovementMode) const;
