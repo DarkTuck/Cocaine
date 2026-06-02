@@ -2,6 +2,7 @@
 
 #include "Public/CocaineMovementComponent.h"
 
+#include "CableComponent.h"
 #include "CocaineGameMode.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
@@ -1391,11 +1392,25 @@ bool UCocaineMovementComponent::KickedEnemy()
 	const FVector TraceStart = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetComponentLocation();
 	const FVector TraceEnd = TraceStart + CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*KickProperties.KickRange;
 	FHitResult Hit{};
-	bool EnemyHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd,ECC_EngineTraceChannel4,Params);
+	bool EnemyHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd,KickTraceChanel,Params);
 	if (ACharacter* HitEnemy = Cast<ACharacter>(Hit.GetActor())) PerformKickOnEnemy(HitEnemy);
 	return Hit.IsValidBlockingHit();
 }
-
+void UCocaineMovementComponent::PerformKick()
+{
+	SLOG("Perform Kick")
+	KickStartTime = GetTS();
+	FVector KickDirection = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*-1.f;
+	//KickDirection.Normalize();
+	KickDirection*=KickProperties.KickForce;
+	SLOG(FString::Printf(TEXT("Kick Direction: %s"), *KickDirection.ToString()))
+	CocaineCharacterOwner->LaunchCharacter(KickDirection,true,true);
+	
+	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Kick);
+	SetMovementMode(MOVE_Falling);
+	
+	
+}
 void UCocaineMovementComponent::PerformKickOnEnemy(ACharacter* HitEnemy)
 {
 	SLOG("Perform Kick On Enemy")
@@ -1419,22 +1434,48 @@ void UCocaineMovementComponent::PerformKickOnEnemy(ACharacter* HitEnemy)
 	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(EMultType::KickedEnemy);
 	// Move on
 }
+#pragma endregion 
 
-void UCocaineMovementComponent::PerformKick()
+#pragma region Grapple
+bool UCocaineMovementComponent::TryGrapple()
 {
-	SLOG("Perform Kick")
-	KickStartTime = GetTS();
-	FVector KickDirection = CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector()*-1.f;
-	//KickDirection.Normalize();
-	KickDirection*=KickProperties.KickForce;
-	SLOG(FString::Printf(TEXT("Kick Direction: %s"), *KickDirection.ToString()))
-	CocaineCharacterOwner->LaunchCharacter(KickDirection,true,true);
-	
-	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Kick);
-	SetMovementMode(MOVE_Falling);
-	
-	
+	return true;
 }
+
+void UCocaineMovementComponent::EnterGrapple(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
+{
+	const FVector Start{CocaineCharacterOwner->GetActorLocation()};
+	const FVector End{Start+(GrappleProperties.MaxLineDistance*CocaineCharacterOwner->GetFirstPersonCameraComponent()->GetForwardVector())};
+	DrawDebugLine(GetWorld(),Start,End,FColor::Emerald);
+	
+	FHitResult Hit;
+	if (const bool bHasHit {GetWorld()->SweepSingleByChannel(Hit,Start,End,FQuat::Identity,GrappleTraceChanel,FCollisionShape::MakeSphere(100.f))})
+	{
+		bIsGrappling=true;
+		Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Grapple);
+		// SetFlying(true);
+		GrappleProperties.GrappleCable->SetVisibility(true);
+		GrapplingPoint=Hit.ImpactPoint;
+	}
+}
+
+void UCocaineMovementComponent::ExitGrapple()
+{
+	bIsGrappling=false;
+	/*if (!IsFalling())
+	{
+		SetFlying(false);
+	}*/
+	GrappleProperties.GrappleCable->SetVisibility(false);
+}
+
+void UCocaineMovementComponent::PhysGrapple(float DeltaTime, int32 Iterations)
+{
+	GrappleProperties.GrappleCable->EndLocation=GetActorTransform().InverseTransformPosition(GrapplingPoint);
+	Velocity+=Acceleration+(GrapplingPoint-GetActorLocation())*GrappleProperties.GrappleForce;
+}
+
+
 #pragma endregion 
 
 #pragma region Helpers

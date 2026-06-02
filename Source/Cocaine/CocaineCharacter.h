@@ -24,6 +24,7 @@ UCLASS(abstract)
 class ACocaineCharacter : public ACharacter
 {
 	GENERATED_BODY()
+	UPROPERTY()
 	ACocaineGameMode* CocaineGameMode;
 
 	/** Pawn mesh: first person view (arms; seen only by self) */
@@ -157,6 +158,8 @@ protected:
 protected:
 	UPROPERTY(BlueprintReadWrite,EditDefaultsOnly,Category="Grappling")
 	float GrappleForce{1000000.f};
+	UPROPERTY(BlueprintReadWrite,EditDefaultsOnly,Category="Grappling")
+	float GrappleSteeringForce{500000.f};
 	UPROPERTY(BlueprintReadWrite,EditDefaultsOnly,Category="Grappling")
 	float MaxLineDistance {1000.f};
 	

@@ -125,6 +125,7 @@ void ACocaineCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	CocaineGameMode=Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode());
+	CocaineMovementComponent->SetGrappleCable(GrappleCable);
 }
 
 void ACocaineCharacter::Tick(float DeltaSeconds)
@@ -133,8 +134,14 @@ void ACocaineCharacter::Tick(float DeltaSeconds)
 	if (bIsGrappling)
 	{
 		GrappleCable->EndLocation=GetActorTransform().InverseTransformPosition(GrapplingPoint);
-		
-		GetCharacterMovement()->AddForce((GrapplingPoint-GetActorLocation()).GetSafeNormal()*GrappleForce);
+		FVector GrappleDirection=GrapplingPoint-GetActorLocation();
+		GrappleDirection.Normalize();
+		GrappleDirection*=GrappleForce;
+		FVector Correction = GetLastMovementInputVector();
+		Correction*=GrappleSteeringForce;
+		FVector Direction = GrappleDirection+Correction;
+		GetCharacterMovement()->AddForce(Direction);
+		//GetCharacterMovement()->AddForce((GrapplingPoint-GetActorLocation()).GetSafeNormal()*GrappleForce);
 	}
 }
 

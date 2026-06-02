@@ -137,6 +137,17 @@ struct FKickProperties
 	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") float KickStunTime = 5.f;
 	UPROPERTY(EditDefaultsOnly, Category="MovementSettings|kick") TSubclassOf<UDamageType> KickDamageType;
 };
+USTRUCT()
+struct FGrappleProperties
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere,Category ="Grappling")
+	class UCableComponent* GrappleCable;
+	UPROPERTY(EditDefaultsOnly,Category="Grappling")
+	float GrappleForce{1000000.f};
+	UPROPERTY(EditDefaultsOnly,Category="Grappling")
+	float MaxLineDistance {1000.f};
+};
 UCLASS()
 class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 {
@@ -187,6 +198,9 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") bool bRootMotionDash=false;
 	constexpr static float DefaultSpeedBoost = 0.f;
 	
+	constexpr static ECollisionChannel KickTraceChanel = ECC_EngineTraceChannel4;
+	constexpr static ECollisionChannel GrappleTraceChanel= ECC_EngineTraceChannel2;
+	
 	// Properties Structs
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FSlideProperties SlideProperties{};
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FProneProperties ProneProperties{};
@@ -194,6 +208,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FMantleProperties MantleProperties{};
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FGrindProperties GrindProperties{};
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FKickProperties KickProperties{};
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FGrappleProperties GrappleProperties{};
 	
 	UPROPERTY() FGrindState GrindState{};
 	
@@ -215,6 +230,9 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	FTimerHandle TimerHandle_EnterProne;
 	FTimerHandle TimerHandle_DashCooldown;
 	FTimerHandle TimerHandle_KickCooldown;
+	
+	bool bIsGrappling{false};
+	FVector GrapplingPoint;
 	
 	bool Safe_bTransitionFinished;
 	TSharedPtr<FRootMotionSource_MoveToForce> TransitionRMS;
@@ -310,6 +328,15 @@ private:
 	bool KickedEnemy();
 	void PerformKick();
 	void PerformKickOnEnemy(ACharacter* HitEnemy);
+
+	// Grapple
+private:
+	bool TryGrapple();
+	void EnterGrapple(EMovementMode PrevMode,ECustomMovementMode PrevCustomMode);
+	void ExitGrapple();
+	void PhysGrapple(float DeltaTime,int32 Iterations);
+public:
+	void SetGrappleCable(class UCableComponent* GrappleCable){GrappleProperties.GrappleCable = GrappleCable;};
 	
 	// Flying
 public:
