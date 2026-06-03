@@ -1310,7 +1310,7 @@ bool UCocaineMovementComponent::TryGrind()
 
 void UCocaineMovementComponent::EnterGrind(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
-	GrindState.CurrentGrindSpeed=GrindProperties.GrindStartingSpeed;
+	GrindState.CurrentGrindSpeed=Velocity.Length();
 }
 
 void UCocaineMovementComponent::ExitGrind()
