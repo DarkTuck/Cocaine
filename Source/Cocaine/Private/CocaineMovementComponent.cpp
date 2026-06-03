@@ -259,6 +259,8 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	{
 		if (CanSlide())
 		{
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle_SlideCooldown,this,&UCocaineMovementComponent::OnSlideCooldownFinished,SlideProperties.SlideCooldown,false);
+			bCanSlide = false;
 			SetMovementMode(MOVE_Custom, CMOVE_Slide);
 		}
 	}
@@ -473,6 +475,12 @@ void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMove
 #pragma endregion
 
 #pragma region Slide
+
+void UCocaineMovementComponent::OnSlideCooldownFinished()
+{
+	bCanSlide = true;
+}
+
 void UCocaineMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
 	bWantsToCrouch = true;
@@ -491,6 +499,7 @@ void UCocaineMovementComponent::ExitSlide()
 
 bool UCocaineMovementComponent::CanSlide() const
 {
+	if (!bCanSlide) return false;
 	FVector Start = UpdatedComponent->GetComponentLocation();
 	FVector End = Start + CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.5f * FVector::DownVector;
 	FName ProfileName = TEXT("BlockAll");
