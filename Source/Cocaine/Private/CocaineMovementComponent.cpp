@@ -1127,6 +1127,7 @@ void UCocaineMovementComponent::EnterMantle(EMovementMode PrevMode, ECustomMovem
 
 void UCocaineMovementComponent::ExitMantle()
 {
+	CharacterOwner->SetActorEnableCollision(true);
 	MantleProperties.MantleTarget = FVector::ZeroVector;
 	AddBoost(CMOVE_Mantle);
 	
