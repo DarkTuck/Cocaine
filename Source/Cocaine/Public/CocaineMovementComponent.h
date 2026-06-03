@@ -57,7 +57,8 @@ struct FSlideProperties
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideGravityForce=4000.f;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideFrictionFactor=.06f;
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float BrakingDecelerationSliding=1000.f;
-	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideSpeedBoost = 0.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideSpeedBoost=0.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Slide") float SlideCooldown=4.f;
 	
 };
 
@@ -230,12 +231,16 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	bool Safe_bPrevWantsToCrouch;
 	
 	bool bDashedInAir{false};
+	bool bCanSlide{true};
 	
 	float DashStartTime;
 	float KickStartTime;
+	
 	FTimerHandle TimerHandle_EnterProne;
+	FTimerHandle TimerHandle_SlideCooldown;
 	FTimerHandle TimerHandle_DashCooldown;
 	FTimerHandle TimerHandle_KickCooldown;
+
 	
 	bool bIsGrappling{false};
 	FVector GrapplingPoint;
@@ -290,6 +295,7 @@ private:
 	void AddBoost(uint8 Mode) const;
 	// slide	
 private:
+	void OnSlideCooldownFinished();
 	void EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode);
 	void ExitSlide();
 	bool CanSlide() const;
