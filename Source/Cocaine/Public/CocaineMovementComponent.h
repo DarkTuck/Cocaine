@@ -228,6 +228,9 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	
 	bool Safe_bHadAnimRootMotion;
 	bool Safe_bPrevWantsToCrouch;
+	
+	bool bDashedInAir{false};
+	
 	float DashStartTime;
 	float KickStartTime;
 	FTimerHandle TimerHandle_EnterProne;
@@ -305,7 +308,7 @@ private:
 	// Dash
 private:
 	void OnDashCooldownFinished();
-	bool CanDash() const;
+	bool CanDash();
 	void PerformDash();
 	void PerformDashRootMotion();
 	

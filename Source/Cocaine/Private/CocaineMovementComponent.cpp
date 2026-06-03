@@ -949,13 +949,16 @@ void UCocaineMovementComponent::OnDashCooldownFinished()
 	Safe_bWantsToDash=true;
 }
 
-bool UCocaineMovementComponent::CanDash() const
+bool UCocaineMovementComponent::CanDash()
 {
-	return (IsWalking() && !IsCrouching()) || (IsFalling() && DashProperties.bDashInAir); 
+	if (IsMovingOnGround()) bDashedInAir=false;
+	return (IsWalking() && !IsCrouching()) || (IsFalling() && DashProperties.bDashInAir && !bDashedInAir); 
 }
 
 void UCocaineMovementComponent::PerformDash()
 {
+	bDashedInAir=IsMovementMode(MOVE_Falling) || IsMovementMode(MOVE_Flying) || IsCustomMovementMode(CMOVE_Grapple);
+	
 	DashStartTime=GetTS();
 	FVector DashDirection = (Acceleration.IsNearlyZero() ? UpdatedComponent->GetForwardVector() : Acceleration).GetSafeNormal2D();
 //	FVector DashDirection = StoredInput.GetSafeNormal2D();
@@ -975,6 +978,7 @@ void UCocaineMovementComponent::PerformDash()
 
 void UCocaineMovementComponent::PerformDashRootMotion()
 {
+	bDashedInAir=IsMovementMode(MOVE_Falling) || IsMovementMode(MOVE_Flying) || IsCustomMovementMode(CMOVE_Grapple);
 	DashStartTime=GetTS();
 	
 	//changing mode to flying will not apply gravity to RootMotion animation (Z coordinate)
