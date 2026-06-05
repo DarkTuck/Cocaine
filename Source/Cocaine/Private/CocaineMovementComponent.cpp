@@ -1579,6 +1579,12 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 		SetMovementMode(MOVE_Falling);
 		StartNewPhysics(deltaTime,Iterations);
 	}
+	if (GrappleProperties.EndGrappleByDistance&&FVector::DistSquared(GrapplingPoint,UpdatedComponent->GetComponentLocation())<GrappleProperties.GrappleMinDistance)
+	{
+		Safe_bWantsToGrapple=false;
+		SetMovementMode(MOVE_Falling);
+		StartNewPhysics(deltaTime,Iterations);
+	}
 }
 
 

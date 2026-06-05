@@ -144,12 +144,14 @@ struct FGrappleProperties
 {
 	GENERATED_BODY()
 	// Grapple
-	UPROPERTY(EditAnywhere,Category ="Grappling") UCableComponent* GrappleCable;
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") bool EndGrappleByDistance{true};
+	UPROPERTY(EditDefaultsOnly,Category ="Grappling") UCableComponent* GrappleCable;
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleForce{100.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleSteeringForce{500000.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float MaxLineDistance {1000.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleMaxSpeed{100000.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleMaxBreakingDeceleration{2500.f};
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleMinDistance{10000.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleSpeedBoost = 0.f;
 };
 UCLASS()
