@@ -1574,13 +1574,11 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 	{
 		Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / deltaTime;
 	}
-	if (!Safe_bWantsToGrapple)
+	
+	if (!Safe_bWantsToGrapple || (GrappleProperties.EndGrappleByDistance && FVector::DistSquared(GrapplingPoint,UpdatedComponent->GetComponentLocation())<GrappleProperties.GrappleMinDistance))
 	{
-		SetMovementMode(MOVE_Falling);
-		StartNewPhysics(deltaTime,Iterations);
-	}
-	if (GrappleProperties.EndGrappleByDistance&&FVector::DistSquared(GrapplingPoint,UpdatedComponent->GetComponentLocation())<GrappleProperties.GrappleMinDistance)
-	{
+		//ApplyVelocityBraking(deltaTime,BrakingFriction,GetMaxBrakingDeceleration());
+		Velocity/=2;
 		Safe_bWantsToGrapple=false;
 		SetMovementMode(MOVE_Falling);
 		StartNewPhysics(deltaTime,Iterations);
