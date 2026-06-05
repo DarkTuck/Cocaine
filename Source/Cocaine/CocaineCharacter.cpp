@@ -161,7 +161,7 @@ FCollisionQueryParams ACocaineCharacter::GetIgnoreCharacterParams() const
 
 void ACocaineCharacter::Interact()
 {
-	
+	/*
 	const FVector Start{GetCapsuleComponent()->GetComponentLocation()};
 	const FVector End{Start+(MaxLineDistance*FirstPersonCameraComponent->GetForwardVector())};
 	DrawDebugLine(GetWorld(),Start,End,FColor::Emerald);
@@ -175,21 +175,21 @@ void ACocaineCharacter::Interact()
 		GrappleCable->SetVisibility(true);
 		GrapplingPoint=Hit.ImpactPoint;
 	}
-	
-	//GetCocaineCharacterMovement()->GrapplePressed();
+	*/
+	GetCocaineCharacterMovement()->GrapplePressed();
 }
 
 void ACocaineCharacter::StopInteract()
 {
-	
+	/*
 	bIsGrappling=false;
 	if (!GetCharacterMovement()->IsFalling())
 	{
 		GetCocaineCharacterMovement()->SetFlying(false);
 	}
 	GrappleCable->SetVisibility(false);
-	
-	//GetCocaineCharacterMovement()->GrappleReleased();
+	*/
+	GetCocaineCharacterMovement()->GrappleReleased();
 }
 
 void ACocaineCharacter::PerformKick()

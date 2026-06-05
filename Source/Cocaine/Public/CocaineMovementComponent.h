@@ -145,10 +145,11 @@ struct FGrappleProperties
 	GENERATED_BODY()
 	// Grapple
 	UPROPERTY(EditAnywhere,Category ="Grappling") UCableComponent* GrappleCable;
-	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleForce{1000000.f};
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleForce{100.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleSteeringForce{500000.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float MaxLineDistance {1000.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleMaxSpeed{100000.f};
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleMaxBreakingDeceleration{2500.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleSpeedBoost = 0.f;
 };
 UCLASS()
@@ -201,8 +202,8 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") bool bRootMotionDash=false;
 	constexpr static float DefaultSpeedBoost = 0.f;
 	
-	constexpr static ECollisionChannel KickTraceChanel = ECC_EngineTraceChannel4;
-	constexpr static ECollisionChannel GrappleTraceChanel= ECC_EngineTraceChannel2;
+	constexpr static ECollisionChannel KickTraceChanel = ECC_GameTraceChannel4;
+	constexpr static ECollisionChannel GrappleTraceChanel = ECC_GameTraceChannel2;
 	
 	// Properties Structs
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FSlideProperties SlideProperties{};
@@ -331,7 +332,7 @@ private:
 	bool TryGrind();
 	void EnterGrind(EMovementMode PrevMode,ECustomMovementMode PrevCustomMode);
 	void ExitGrind();
-	void PhysGrind(float DeltaTime,int32 Iterations);
+	void PhysGrind(float deltaTime,int32 Iterations);
 	
 	// Kick
 private:
