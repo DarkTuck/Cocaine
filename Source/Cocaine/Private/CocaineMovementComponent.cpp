@@ -257,7 +257,7 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	// Slide
 	if (MovementMode==MOVE_Walking&&bWantsToCrouch&&Safe_bPrevWantsToCrouch) // Enter
 	{
-		if (CanSlide())
+		if (CanSlide()&&bCanSlide)
 		{
 			GetWorld()->GetTimerManager().SetTimer(TimerHandle_SlideCooldown,this,&UCocaineMovementComponent::OnSlideCooldownFinished,SlideProperties.SlideCooldown,false);
 			bCanSlide = false;
@@ -485,7 +485,7 @@ void UCocaineMovementComponent::OnSlideCooldownFinished()
 void UCocaineMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
 	bWantsToCrouch = true;
-	bOrientRotationToMovement = false;
+	//bOrientRotationToMovement = false;
 	Velocity += Velocity.GetSafeNormal2D() * (SlideProperties.SlideEnterImpulse*GetSpeedBoost(CMOVE_Slide));
 
 	FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, true, NULL);
@@ -495,17 +495,16 @@ void UCocaineMovementComponent::ExitSlide()
 {
 	CocaineCharacterOwner->SetActorRotation(FRotator::ZeroRotator);
 	bWantsToCrouch = false;
-	bOrientRotationToMovement = true;
+	//bOrientRotationToMovement = true;
 }
 
 bool UCocaineMovementComponent::CanSlide() const
 {
-	if (!bCanSlide) return false;
-	FVector Start = UpdatedComponent->GetComponentLocation();
-	FVector End = Start + CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.5f * FVector::DownVector;
-	FName ProfileName = TEXT("BlockAll");
-	bool bValidSurface = GetWorld()->LineTraceTestByProfile(Start, End, ProfileName, CocaineCharacterOwner->GetIgnoreCharacterParams());
-	bool bEnoughSpeed = Velocity.SizeSquared() > pow(SlideProperties.MinSlideSpeed, 2);
+	const FVector Start = UpdatedComponent->GetComponentLocation();
+	const FVector End = Start + CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.5f * FVector::DownVector;
+	const FName ProfileName = TEXT("BlockAll");
+	const bool bValidSurface = GetWorld()->LineTraceTestByProfile(Start, End, ProfileName, CocaineCharacterOwner->GetIgnoreCharacterParams());
+	const bool bEnoughSpeed = Velocity.SizeSquared() > pow(SlideProperties.MinSlideSpeed, 2);
 	
 	return bValidSurface && bEnoughSpeed;
 }
