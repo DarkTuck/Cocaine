@@ -314,7 +314,7 @@ private:
 	// Dash
 private:
 	void OnDashCooldownFinished();
-	bool CanDash();
+	bool CanDash() const;
 	void PerformDash();
 	void PerformDashRootMotion();
 	

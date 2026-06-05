@@ -459,6 +459,7 @@ void UCocaineMovementComponent::OnMovementModeChanged(EMovementMode PreviousMove
  	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
 	
 	UpdateMult();
+	if (IsMovingOnGround()) bDashedInAir=false;
 	
  	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Slide) ExitSlide();
  	if (PreviousMovementMode==MOVE_Custom && PreviousCustomMode==CMOVE_Prone) ExitProne();
@@ -958,9 +959,8 @@ void UCocaineMovementComponent::OnDashCooldownFinished()
 	Safe_bWantsToDash=true;
 }
 
-bool UCocaineMovementComponent::CanDash()
+bool UCocaineMovementComponent::CanDash() const
 {
-	if (IsMovingOnGround()) bDashedInAir=false;
 	return (IsWalking() && !IsCrouching()) || (IsFalling() && DashProperties.bDashInAir && !bDashedInAir); 
 }
 
