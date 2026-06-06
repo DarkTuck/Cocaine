@@ -24,12 +24,14 @@ public:
  	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") int Roundness = 8;
  	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") int Subdivision = 3;
  	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") float Height = 50.f;
-protected: 	
+protected:	
+	FGeometryScriptPolyPath Brush{};
+public:
+	UFUNCTION(BlueprintPure)
  	FORCEINLINE USplineComponent* GetGrindRail() const { return Spline; }
-	AGrindingRail();
-	virtual void OnConstruction(const FTransform& Transform) override;
 	UFUNCTION(BlueprintCallable)
 	void RebuildMesh();
-	FGeometryScriptPolyPath Brush{};
-
+protected:
+	AGrindingRail();
+	virtual void OnConstruction(const FTransform& Transform) override;
 };

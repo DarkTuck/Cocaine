@@ -136,7 +136,7 @@ public:
 
 	FCollisionQueryParams GetIgnoreCharacterParams() const;
 	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintPure)
 	FVector GetStartingHeadLocation() const {return StartingHeadLocation;}
 protected:
 	virtual void PerformGrapple();
