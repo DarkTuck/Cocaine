@@ -29,6 +29,12 @@ void AShooterNPC::BeginPlay()
 	GameMode = Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode());
 }
 
+void AShooterNPC::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	MaxHP=CurrentHP;
+}
+
 void AShooterNPC::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);

@@ -27,6 +27,11 @@ public:
 	/** Current HP for this character. It dies if it reaches zero through damage */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage")
 	float CurrentHP = 100.0f;
+	
+	float MaxHP = 100.0f;
+	
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE float GetMaxHealth() const {return MaxHP;}
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage")
@@ -98,6 +103,8 @@ protected:
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
+	
+	virtual void OnConstruction(const FTransform& Transform) override;
 	
 	virtual void PossessedBy(AController* NewController) override;
 
