@@ -42,6 +42,7 @@ void AShooterProjectile::BeginPlay()
 	
 	// ignore the pawn that shot this projectile
 	CollisionComponent->IgnoreActorWhenMoving(GetInstigator(), true);
+	CollisionComponent->IgnoreActorWhenMoving(GetOwner(), true);
 }
 
 void AShooterProjectile::EndPlay(EEndPlayReason::Type EndPlayReason)
@@ -56,6 +57,10 @@ void AShooterProjectile::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Ot
 {
 	// ignore if we've already hit something else
 	if (bHit)
+	{
+		return;
+	}
+	if (Other == GetOwner())
 	{
 		return;
 	}
