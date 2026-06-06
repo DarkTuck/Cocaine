@@ -16,18 +16,20 @@ UCLASS(BlueprintType)
 class COCAINE_API AGrindingRail : public ADynamicMeshActor
 {
 	GENERATED_BODY()
+public:
+ 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Spline") USplineComponent* Spline;
+ 	
+ 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") float Radius = 5.f;
+ 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") float CornerRadius = 42.f;
+ 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") int Roundness = 8;
+ 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") int Subdivision = 3;
+ 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") float Height = 50.f;
+protected: 	
+ 	FORCEINLINE USplineComponent* GetGrindRail() const { return Spline; }
 	AGrindingRail();
 	virtual void OnConstruction(const FTransform& Transform) override;
+	UFUNCTION(BlueprintCallable)
 	void RebuildMesh();
 	FGeometryScriptPolyPath Brush{};
-public:
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Spline") USplineComponent* Spline;
-	
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") float Radius = 5.f;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") float CornerRadius = 42.f;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") int Roundness = 8;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") int Subdivision = 3;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RailSettings") float Height = 50.f;
-	
-	FORCEINLINE USplineComponent* GetGrindRail() const { return Spline; }
+
 };

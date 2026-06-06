@@ -74,7 +74,6 @@ void ACocaineCharacter::StopJumping()
 	Super::StopJumping();
 	bPressedCocaineJump=false;
 }
-
 void ACocaineCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {	
 	// Set up action bindings
@@ -96,8 +95,8 @@ void ACocaineCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		EnhancedInputComponent->BindAction(SlowMoAction, ETriggerEvent::Completed,this,&ACocaineCharacter::StopSlowMo);
 		
 		// Interact
-		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Triggered,this,&ACocaineCharacter::Interact);
-		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Completed,this,&ACocaineCharacter::StopInteract);
+		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Triggered,this,&ACocaineCharacter::PerformGrapple);
+		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Completed,this,&ACocaineCharacter::StopGrapple);
 		
 		// Kick
 		EnhancedInputComponent->BindAction(KickAction, ETriggerEvent::Started,this,&ACocaineCharacter::PerformKick);
@@ -127,26 +126,6 @@ void ACocaineCharacter::BeginPlay()
 	CocaineGameMode=Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode());
 	CocaineMovementComponent->SetGrappleCable(GrappleCable);
 }
-
-void ACocaineCharacter::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-	
-	if (bIsGrappling)
-	{
-		GrappleCable->EndLocation=GetActorTransform().InverseTransformPosition(GrapplingPoint);
-		FVector GrappleDirection=GrapplingPoint-GetActorLocation();
-		GrappleDirection.Normalize();
-		GrappleDirection*=GrappleForce;
-		FVector Correction = GetLastMovementInputVector();
-		Correction*=GrappleSteeringForce;
-		FVector Direction = GrappleDirection+Correction;
-		GetCharacterMovement()->AddForce(Direction);
-		//GetCharacterMovement()->AddForce((GrapplingPoint-GetActorLocation()).GetSafeNormal()*GrappleForce);
-	}
-	
-}
-
 FCollisionQueryParams ACocaineCharacter::GetIgnoreCharacterParams() const
 {
 	FCollisionQueryParams Params;
@@ -159,36 +138,13 @@ FCollisionQueryParams ACocaineCharacter::GetIgnoreCharacterParams() const
 	return Params;
 }
 
-void ACocaineCharacter::Interact()
+void ACocaineCharacter::PerformGrapple()
 {
-	/*
-	const FVector Start{GetCapsuleComponent()->GetComponentLocation()};
-	const FVector End{Start+(MaxLineDistance*FirstPersonCameraComponent->GetForwardVector())};
-	DrawDebugLine(GetWorld(),Start,End,FColor::Emerald);
-	
-	FHitResult Hit;
-	if (const bool bHasHit {GetWorld()->SweepSingleByChannel(Hit,Start,End,FQuat::Identity,ECC_GameTraceChannel2,FCollisionShape::MakeSphere(100.f))})
-	{
-		bIsGrappling=true;
-		Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Grapple);
-		GetCocaineCharacterMovement()->SetFlying(true);
-		GrappleCable->SetVisibility(true);
-		GrapplingPoint=Hit.ImpactPoint;
-	}
-	*/
 	GetCocaineCharacterMovement()->GrapplePressed();
 }
 
-void ACocaineCharacter::StopInteract()
+void ACocaineCharacter::StopGrapple()
 {
-	/*
-	bIsGrappling=false;
-	if (!GetCharacterMovement()->IsFalling())
-	{
-		GetCocaineCharacterMovement()->SetFlying(false);
-	}
-	GrappleCable->SetVisibility(false);
-	*/
 	GetCocaineCharacterMovement()->GrappleReleased();
 }
 

@@ -4,6 +4,7 @@
 
 #include "CableComponent.h"
 #include "CocaineGameMode.h"
+#include "CocaineCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
