@@ -3,10 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CocaineCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "CocaineMovementComponent.generated.h"
 
+class UCableComponent;
+class ACocaineCharacter;
 class AGrindingRail;
 class USplineComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDashStartDelegate);

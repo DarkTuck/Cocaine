@@ -9,6 +9,7 @@
 #include "Net/UnrealNetwork.h"
 #include "CocaineCharacter.generated.h"
 
+struct FTimeline;
 class UInputComponent;
 class USkeletalMeshComponent;
 class UCameraComponent;
@@ -83,6 +84,7 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category ="Grappling")
 	class UCableComponent* GrappleCable;
+	const FVector StartingHeadLocation= FVector(-2.8f, 5.89f, 0.0f);
 public:
 	bool bPressedCocaineJump;
 public:
@@ -120,7 +122,6 @@ protected:
 	/** Set up input action bindings */
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaSeconds) override;
 	
 
 public:
@@ -134,9 +135,12 @@ public:
 	UCocaineMovementComponent* GetCocaineCharacterMovement() const {return CocaineMovementComponent;}
 
 	FCollisionQueryParams GetIgnoreCharacterParams() const;
+	
+	UFUNCTION(BlueprintCallable)
+	FVector GetStartingHeadLocation() const {return StartingHeadLocation;}
 protected:
-	virtual void Interact();
-	virtual void StopInteract();
+	virtual void PerformGrapple();
+	virtual void StopGrapple();
 	
 	virtual void PerformKick();
 	virtual void StopKick();
