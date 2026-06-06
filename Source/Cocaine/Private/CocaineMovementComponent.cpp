@@ -488,6 +488,8 @@ void UCocaineMovementComponent::OnSlideCooldownFinished()
 
 void UCocaineMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
+	SlideStartDelegate.Broadcast();
+	
 	bWantsToCrouch = true;
 	//bOrientRotationToMovement = false;
 	Velocity += Velocity.GetSafeNormal2D() * (SlideProperties.SlideEnterImpulse*GetSpeedBoost(CMOVE_Slide));
@@ -497,6 +499,8 @@ void UCocaineMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMoveme
 
 void UCocaineMovementComponent::ExitSlide()
 {
+	SlideEndDelegate.Broadcast();
+	
 	CocaineCharacterOwner->SetActorRotation(FRotator::ZeroRotator);
 	bWantsToCrouch = false;
 	//bOrientRotationToMovement = true;

@@ -11,6 +11,8 @@ class ACocaineCharacter;
 class AGrindingRail;
 class USplineComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDashStartDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSlideStartDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSlideEndDelegate);
 /**
  * 
  */
@@ -268,6 +270,8 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	// Delegates
 public:
 	UPROPERTY(BlueprintAssignable) FDashStartDelegate DashStartDelegate;
+	UPROPERTY(BlueprintAssignable) FSlideStartDelegate SlideStartDelegate;
+	UPROPERTY(BlueprintAssignable) FSlideEndDelegate SlideEndDelegate;
 	
 public:
 	UCocaineMovementComponent();
