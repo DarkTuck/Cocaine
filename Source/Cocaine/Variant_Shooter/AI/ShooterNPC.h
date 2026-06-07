@@ -28,14 +28,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage")
 	float CurrentHP = 100.0f;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage")
 	float MaxHP = 100.0f;
 	
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE float GetMaxHealth() const {return MaxHP;}
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage")
-	float HeadShotMultiplayer = 2.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage|Headshots")
+	float HeadShotDamageMultiplayer = 2.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage|Headshots")
+	bool MultiplyDamage;
 	/** Name of the collision profile to use during ragdoll death */
 	UPROPERTY(EditAnywhere, Category="Damage")
 	FName RagdollCollisionProfile = FName("Ragdoll");

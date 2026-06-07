@@ -27,12 +27,12 @@ void AShooterNPC::BeginPlay()
 
 	Weapon = GetWorld()->SpawnActor<AShooterWeapon>(WeaponClass, GetActorTransform(), SpawnParams);
 	GameMode = Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode());
+	MaxHP=CurrentHP;
 }
 
 void AShooterNPC::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
-	MaxHP=CurrentHP;
 }
 
 void AShooterNPC::PossessedBy(AController* NewController)
@@ -55,14 +55,15 @@ void AShooterNPC::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 float AShooterNPC::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
+	const float ActualDamage=Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
+	
 	// ignore if already dead
 	if (bIsDead)
 	{
 		return 0.0f;
 	}
 	// Reduce HP
-	CurrentHP -= Damage;
+	CurrentHP -= ActualDamage;
 
 	// Have we depleted HP?
 	if (CurrentHP <= 0.0f)
@@ -70,21 +71,22 @@ float AShooterNPC::TakeDamage(float Damage, struct FDamageEvent const& DamageEve
 		Die();
 	}
 
-	return Damage;
+	return ActualDamage;
 }
 
 float AShooterNPC::InternalTakePointDamage(float Damage, struct FPointDamageEvent const& PointDamageEvent,
 	class AController* EventInstigator, AActor* DamageCauser)
 {
+	float HeadDamage=Damage;
 	
 	UE_LOG(LogTemp, Warning, TEXT("Point damage %ls"),*PointDamageEvent.HitInfo.BoneName.ToString());
 	if (IsHeadShot(PointDamageEvent.HitInfo.ImpactPoint,PointDamageEvent.ShotDirection,1.f,DamageCauser))
 	{
-		Damage *= HeadShotMultiplayer;
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Headshot %f"), Damage));
+		HeadDamage = MultiplyDamage ? HeadDamage*HeadShotDamageMultiplayer : HeadDamage+HeadShotDamageMultiplayer;
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Headshot %f"), HeadDamage));
 		 GameMode->AddMult(Headshot);
 	}
-	return Damage;
+	return HeadDamage;
 }
 
 void AShooterNPC::AttachWeaponMeshes(AShooterWeapon* WeaponToAttach)
