@@ -44,13 +44,19 @@ void AGrindingRail::RebuildMesh()
 	                                                                  Frames);
 	HelperSpline->DestroyComponent();
 	MeshComponent->MarkRenderStateDirty();
+	//MeshComponent->UpdateCollisionProfile();
+	MeshComponent->UpdateCollision();
 }
 
 AGrindingRail::AGrindingRail()
 {	
 	if (UDynamicMeshComponent* DynamicMeshComp = GetDynamicMeshComponent())
 	{
-		DynamicMeshComp->SetCollisionProfileName(FName{"Grind"});
+		// Set Grind Collision chanel response to block
+		DynamicMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel3, ECollisionResponse::ECR_Block);
+		DynamicMeshComp->SetDeferredCollisionUpdatesEnabled(true);
+		DynamicMeshComp->bEnableComplexCollision = true;
+		DynamicMeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	}
 }
 
