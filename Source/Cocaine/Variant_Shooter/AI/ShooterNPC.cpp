@@ -195,7 +195,7 @@ void AShooterNPC::Die()
 	// raise the dead flag
 	bIsDead = true;
 	// increment the team score
-	// TODO Change it to better suit or game (scrap team score when finished testing)
+	// TODO Change it to better suit our game (scrap team score when finished testing)
 	if (AShooterGameMode* GM = Cast<AShooterGameMode>(GetWorld()->GetAuthGameMode()))
 	{
 		GM->IncrementTeamScore(TeamByte);
