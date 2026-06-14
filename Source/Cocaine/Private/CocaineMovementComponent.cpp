@@ -362,9 +362,9 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	}
 	
 	// Grapple
-	if (Safe_bWantsToGrapple && !bIsGrappling)
+	if (Safe_bWantsToGrapple && !bIsGrappling && bCanGrapple)
 	{
-		if (TryGrapple() && bCanGrapple)
+		if (TryGrapple())
 		{
 			GetWorld()->GetTimerManager().SetTimer(TimerHandle_GrappleCooldown,this,&UCocaineMovementComponent::OnGrappleCooldownFinished,GrappleProperties.GrappleCooldownDuration,false);
 			bCanGrapple=false;
@@ -396,7 +396,7 @@ void UCocaineMovementComponent::UpdateCharacterStateAfterMovement(float DeltaSec
 void UCocaineMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
 {
 	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
-	if (IsMovementMode(MOVE_Flying) && !HasRootMotionSources()) SetMovementMode(MOVE_Walking);
+	//if (IsMovementMode(MOVE_Flying) && !HasRootMotionSources()) SetMovementMode(MOVE_Walking);
 	Safe_bPrevWantsToCrouch = bWantsToCrouch;
 	
 	if (GrindState.bMovingToGrindEntryPoint && (GrindState.MoveToGrindEntryPointTimeElapsed>= GrindState.MoveToGrindEntryPointDuration))

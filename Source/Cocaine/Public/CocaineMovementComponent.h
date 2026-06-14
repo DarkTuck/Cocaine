@@ -156,7 +156,7 @@ struct FGrappleProperties
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleMaxBreakingDeceleration{2500.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleMinDistance{10000.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleSpeedBoost = 0.f;
-	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleCooldownDuration=0.1f;
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleCooldownDuration=0.3f;
 };
 UCLASS()
 class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
