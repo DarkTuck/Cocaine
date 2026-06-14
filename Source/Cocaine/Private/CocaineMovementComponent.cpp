@@ -1328,6 +1328,7 @@ bool UCocaineMovementComponent::TryGrind()
 void UCocaineMovementComponent::EnterGrind(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
 	GrindState.CurrentGrindSpeed=Velocity.Length();
+	bDashedInAir = false;
 }
 
 void UCocaineMovementComponent::ExitGrind()
