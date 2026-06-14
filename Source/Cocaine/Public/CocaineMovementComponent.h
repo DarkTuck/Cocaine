@@ -156,6 +156,7 @@ struct FGrappleProperties
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleMaxBreakingDeceleration{2500.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleMinDistance{10000.f};
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleSpeedBoost = 0.f;
+	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleCooldownDuration=0.1f;
 };
 UCLASS()
 class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
@@ -238,6 +239,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	
 	bool bDashedInAir{false};
 	bool bCanSlide{true};
+	bool bCanGrapple{true};
 	
 	float DashStartTime;
 	float KickStartTime;
@@ -246,6 +248,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	FTimerHandle TimerHandle_SlideCooldown;
 	FTimerHandle TimerHandle_DashCooldown;
 	FTimerHandle TimerHandle_KickCooldown;
+	FTimerHandle TimerHandle_GrappleCooldown;
 
 	
 	bool bIsGrappling{false};
@@ -351,6 +354,7 @@ private:
 
 	// Grapple
 private:
+	void OnGrappleCooldownFinished();
 	bool TryGrapple();
 	void EnterGrapple(EMovementMode PrevMode,ECustomMovementMode PrevCustomMode);
 	void ExitGrapple();

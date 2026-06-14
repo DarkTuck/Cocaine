@@ -364,8 +364,10 @@ void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSe
 	// Grapple
 	if (Safe_bWantsToGrapple && !bIsGrappling)
 	{
-		if (TryGrapple())
+		if (TryGrapple() && bCanGrapple)
 		{
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle_GrappleCooldown,this,&UCocaineMovementComponent::OnGrappleCooldownFinished,GrappleProperties.GrappleCooldownDuration,false);
+			bCanGrapple=false;
 			SetMovementMode(MOVE_Custom,CMOVE_Grapple);
 		}
 	}
@@ -1481,6 +1483,12 @@ void UCocaineMovementComponent::PerformKickOnEnemy(ACharacter* HitEnemy)
 #pragma endregion 
 
 #pragma region Grapple
+
+void UCocaineMovementComponent::OnGrappleCooldownFinished()
+{
+	bCanGrapple = true;
+}
+
 bool UCocaineMovementComponent::TryGrapple()
 {
 	const FVector Start{CocaineCharacterOwner->GetCapsuleComponent()->GetComponentLocation()};
