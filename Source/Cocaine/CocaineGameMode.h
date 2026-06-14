@@ -126,7 +126,30 @@ public:
 	
 	void StartSlowMo();
 	void StopSlowMo();
-
+	
+	//Getters Setters
+	UFUNCTION(BlueprintPure) int GetSlideMultValue() const {return SlideMultValue;}
+	UFUNCTION(BlueprintPure) int GetJumpMultValue() const {return JumpMultValue;}
+	UFUNCTION(BlueprintPure) int GetKickMultValue() const {return KickMultValue;}
+	UFUNCTION(BlueprintPure) int GetDashMultValue() const {return DashMultValue;}
+	UFUNCTION(BlueprintPure) int GetGrindMultValue() const {return GrindMultValue;}
+	UFUNCTION(BlueprintPure) int GetMantleMultValue() const {return MantleMultValue;}
+	UFUNCTION(BlueprintPure) int GetKillMultValue() const {return KillMultValue;}
+	UFUNCTION(BlueprintPure) int GetGrappleMultValue() const {return GrappleMultValue;}
+	UFUNCTION(BlueprintPure) int HeadShotMultValue() const {return HeadshotMultValue;}
+	
+	UFUNCTION(BlueprintCallable) void SetSlideMultValue(const int NewMultValue){SlideMultValue=NewMultValue;}
+	UFUNCTION(BlueprintCallable) void SetJumpMultValue(const int NewMultValue){JumpMultValue=NewMultValue;}
+	UFUNCTION(BlueprintCallable) void SetKickMultValue(const int NewMultValue){KickMultValue=NewMultValue;}
+	UFUNCTION(BlueprintCallable) void SetDashMultValue(const int NewMultValue){DashMultValue=NewMultValue;}
+	UFUNCTION(BlueprintCallable) void SetGrindMultValue(const int NewMultValue){GrindMultValue=NewMultValue;}
+	UFUNCTION(BlueprintCallable) void SetMantleMultValue(const int NewMultValue){MantleMultValue=NewMultValue;}
+	UFUNCTION(BlueprintCallable) void SetKillMultValue(const int NewMultValue){KillMultValue=NewMultValue;}
+	UFUNCTION(BlueprintCallable) void SetGrappleMultValue(const int NewMultValue){GrappleMultValue=NewMultValue;}
+	UFUNCTION(BlueprintCallable) void SetHeadshotMultValue(const int NewMultValue){HeadshotMultValue=NewMultValue;}
+	
+	
+	
 private:
 	
 	void AddToHistory(const EMultType& MultType);
