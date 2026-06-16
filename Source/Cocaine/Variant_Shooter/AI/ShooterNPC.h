@@ -100,6 +100,7 @@ protected:
 public:
 
 	/** Delegate called when this NPC dies */
+	UPROPERTY(BlueprintAssignable)
 	FPawnDeathDelegate OnPawnDeath;
 
 protected:
