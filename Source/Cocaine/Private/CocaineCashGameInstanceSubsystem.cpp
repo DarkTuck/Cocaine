@@ -5,6 +5,6 @@
 
 void UCocaineCashGameInstanceSubsystem::AddCash(const int Amount)
 {
-	Cash+=Amount*LastMultValue;
+	Cash+=Amount;
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Cash: %d"),Cash));
 }
