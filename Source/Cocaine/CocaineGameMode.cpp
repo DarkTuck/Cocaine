@@ -144,8 +144,8 @@ void ACocaineGameMode::StopSlowMo()
 void ACocaineGameMode::SaveAndSumCash()
 {
 	Currents.currentScore*=Currents.currentMult;
-	Currents.currentScore=0;
 	CocaineCashSubsystem->AddCash(Currents.currentScore);
+	Currents.currentScore=0;
 }
 
 void ACocaineGameMode::AddToHistory(const EMultType& MultType)
