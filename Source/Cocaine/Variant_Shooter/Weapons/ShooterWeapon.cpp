@@ -194,8 +194,8 @@ void AShooterWeapon::FireRayCast(const FVector& TargetLocation)
 	FCollisionQueryParams& Params = FCollisionQueryParams::DefaultQueryParam;
 	Params.bTraceComplex = true;
 	Params.bReturnPhysicalMaterial = true;
-	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,WeaponRay,Params);
-//	const bool bHit = GetWorld()->SweepSingleByChannel(HitResult,TraceStart,TraceEnd,FQuat::Identity,WeaponRay,FCollisionShape::MakeSphere(RayStruct.RayBulletSize));
+//	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,WeaponRay,Params);
+	const bool bHit = GetWorld()->SweepSingleByChannel(HitResult,TraceStart,TraceEnd,FQuat::Identity,WeaponRay,FCollisionShape::MakeSphere(RayStruct.RayHitTraceRadius));
 	if (!bHit)
 	{
 		FireLogic();

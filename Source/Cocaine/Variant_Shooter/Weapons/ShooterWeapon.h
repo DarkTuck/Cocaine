@@ -27,7 +27,7 @@ struct FWeaponRay
 	UPROPERTY(EditAnywhere, Category="Firing")
 	float RayHitDamage = 10.0f;
 	UPROPERTY(EditAnywhere, Category="Firing")
-	float RayHitTraceRadius = 0.f;
+	float RayHitTraceRadius = 5.f;
 	UPROPERTY(EditAnywhere, Category="Firing")
 	TSubclassOf<UDamageType> HitDamageType;
 };
