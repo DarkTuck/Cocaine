@@ -18,6 +18,8 @@
  */
 
 
+class UCocaineCashGameInstanceSubsystem;
+
 UENUM()
 enum EMultType
 {
@@ -99,6 +101,8 @@ class ACocaineGameMode : public AGameModeBase
 	static constexpr int MinStoredMult = 0;
 	bool bIsSlowMo;
 	
+	UCocaineCashGameInstanceSubsystem* CocaineCashSubsystem;
+	
 	void UpdateScore(const float& Score);
 	
 	//void OnMultFade();
@@ -147,6 +151,8 @@ public:
 	UFUNCTION(BlueprintCallable) void SetKillMultValue(const int NewMultValue){KillMultValue=NewMultValue;}
 	UFUNCTION(BlueprintCallable) void SetGrappleMultValue(const int NewMultValue){GrappleMultValue=NewMultValue;}
 	UFUNCTION(BlueprintCallable) void SetHeadshotMultValue(const int NewMultValue){HeadshotMultValue=NewMultValue;}
+	
+	UFUNCTION(BlueprintCallable) void SaveAndSumCash();
 	
 	
 	

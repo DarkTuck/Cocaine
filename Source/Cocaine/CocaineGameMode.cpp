@@ -2,6 +2,7 @@
 
 #include "CocaineGameMode.h"
 
+#include "CocaineCashGameInstanceSubsystem.h"
 #include "MultSystemUI.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -80,6 +81,7 @@ void ACocaineGameMode::BeginPlay()
 void ACocaineGameMode::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
+	CocaineCashSubsystem=UGameplayStatics::GetGameInstance(GetWorld())->GetSubsystem<UCocaineCashGameInstanceSubsystem>();
 }
 
 ACocaineGameMode::ACocaineGameMode()
@@ -137,6 +139,13 @@ void ACocaineGameMode::StopSlowMo()
 	const UWorld* World = GetWorld();
 	World->GetTimerManager().ClearTimer(SlowMoDrainTimer);
 	UGameplayStatics::SetGlobalTimeDilation(World,1);
+}
+
+void ACocaineGameMode::SaveAndSumCash()
+{
+	Currents.currentScore*=Currents.currentMult;
+	Currents.currentScore=0;
+	CocaineCashSubsystem->AddCash(Currents.currentScore);
 }
 
 void ACocaineGameMode::AddToHistory(const EMultType& MultType)
