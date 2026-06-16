@@ -14,7 +14,7 @@ class COCAINE_API UCocaineCashGameInstanceSubsystem : public UGameInstanceSubsys
 {
 	GENERATED_BODY()
 private:
-	int Cash = 0;
+	int Cash = 200;
 	int LastMultValue = 1;
 	
 public:

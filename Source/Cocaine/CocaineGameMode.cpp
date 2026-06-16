@@ -70,6 +70,7 @@ void ACocaineGameMode::StopStoredMultFade()
 void ACocaineGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	CocaineCashSubsystem=UGameplayStatics::GetGameInstance(GetWorld())->GetSubsystem<UCocaineCashGameInstanceSubsystem>();
 	//GetWorld()->GetTimerManager().SetTimer(MultFade,this,&ACocaineGameMode::OnMultFade,MultFadeDuration);
 	GetWorld()->GetTimerManager().SetTimer(StoredMultFade,this,&ACocaineGameMode::OnStoredMultFade,StoredMultFadeDuration);
 	if (bPassiveScoring) GetWorld()->GetTimerManager().SetTimer(ScoreInterval,this,&ACocaineGameMode::OnScoreInterval,PassiveScoreInterval,true);
@@ -81,7 +82,6 @@ void ACocaineGameMode::BeginPlay()
 void ACocaineGameMode::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
-	CocaineCashSubsystem=UGameplayStatics::GetGameInstance(GetWorld())->GetSubsystem<UCocaineCashGameInstanceSubsystem>();
 }
 
 ACocaineGameMode::ACocaineGameMode()
