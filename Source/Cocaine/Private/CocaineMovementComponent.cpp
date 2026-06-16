@@ -16,7 +16,7 @@
 #include "Kismet/GameplayStatics.h"
 
 // Helper Macros
-#if 1
+#if WITH_EDITOR
 float MacroDuration = 2.f;
 #define SLOG(x) GEngine->AddOnScreenDebugMessage(-1, MacroDuration ? MacroDuration:-1.f, FColor::Yellow,x); //write debug on screen macro
 #define POINT(x,c) DrawDebugPoint(GetWorld(),x,10,c,!MacroDuration,MacroDuration); // draw debug point macro

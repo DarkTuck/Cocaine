@@ -6,7 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 
-#if 1
+#if WITH_EDITOR
 #define STLOG(duration,color,text) GEngine->AddOnScreenDebugMessage(-1, duration, color, text)
 #else
 #define STLOG(duration,color,text)

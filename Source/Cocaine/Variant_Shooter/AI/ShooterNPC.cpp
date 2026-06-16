@@ -3,6 +3,7 @@
 
 #include "Variant_Shooter/AI/ShooterNPC.h"
 
+#include "CocaineEnemyManager.h"
 #include "ShooterAIController.h"
 #include "ShooterWeapon.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -219,6 +220,11 @@ void AShooterNPC::Die()
 
 	// schedule actor destruction
 	GetWorld()->GetTimerManager().SetTimer(DeathTimer, this, &AShooterNPC::DeferredDestruction, DeferredDestructionTime, false);
+	
+	if (CocaineEnemyManager!=nullptr)
+	{
+		CocaineEnemyManager->RemoveNPC(this);
+	}
 }
 
 void AShooterNPC::DeferredDestruction()

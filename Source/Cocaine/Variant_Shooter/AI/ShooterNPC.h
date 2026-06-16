@@ -10,6 +10,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPawnDeathDelegate);
 
 class AShooterWeapon;
+class UCocaineEnemyManager;
 
 /**
  *  A simple AI-controlled shooter game NPC
@@ -33,6 +34,8 @@ public:
 	
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE float GetMaxHealth() const {return MaxHP;}
+	
+	UCocaineEnemyManager* CocaineEnemyManager;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage|Headshots")

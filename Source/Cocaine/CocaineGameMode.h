@@ -62,10 +62,10 @@ class ACocaineGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KillMultValue=DefaultMultValue;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int GrappleMultValue=DefaultMultValue;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int HeadshotMultValue=DefaultMultValue;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int BaseStoredMultDrainValue=10;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") int MultThreshold=100;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float BaseStoredMultDrainValue=0.15f;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float MultFadeDuration=5;
-	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float StoredMultFadeDuration=2.5f;
+	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|System Settings") float StoredMultFadeDuration=0.3f;
 	
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System") int StartingScore=0;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Score System") int BaseScoreGain=10;
