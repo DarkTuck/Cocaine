@@ -26,6 +26,7 @@ protected:
 	TSubclassOf<UShooterUI> ShooterUIClass;
 
 	/** Pointer to the UI widget */
+	UPROPERTY(BlueprintReadWrite)
 	TObjectPtr<UShooterUI> ShooterUI;
 
 	/** Map of scores by team ID */

@@ -157,7 +157,8 @@ void AShooterCharacter::AttachWeaponMeshes(AShooterWeapon* Weapon)
 
 void AShooterCharacter::PlayFiringMontage(UAnimMontage* Montage)
 {
-	
+	PlayAnimMontage(Montage);
+	if (WITH_EDITOR) GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, TEXT("Firing montage played"));
 }
 
 void AShooterCharacter::AddWeaponRecoil(float Recoil)

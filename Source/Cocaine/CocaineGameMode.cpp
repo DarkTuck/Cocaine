@@ -4,6 +4,7 @@
 
 #include "CocaineCashGameInstanceSubsystem.h"
 #include "MultSystemUI.h"
+#include "StoredMultValuesSubsystem.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -76,7 +77,9 @@ void ACocaineGameMode::BeginPlay()
 	if (bPassiveScoring) GetWorld()->GetTimerManager().SetTimer(ScoreInterval,this,&ACocaineGameMode::OnScoreInterval,PassiveScoreInterval,true);
 	UIWidget = CreateWidget<UMultSystemUI>(GetWorld()->GetFirstPlayerController(),UIWidgetClass);
 	UIWidget->AddToViewport();
-
+	
+	//LOAD MULT VALUE
+	LoadMultValues();
 }
 
 void ACocaineGameMode::OnConstruction(const FTransform& Transform)
@@ -146,6 +149,20 @@ void ACocaineGameMode::SaveAndSumCash()
 	Currents.currentScore*=Currents.currentMult;
 	CocaineCashSubsystem->AddCash(Currents.currentScore);
 	Currents.currentScore=0;
+}
+
+void ACocaineGameMode::LoadMultValues()
+{
+	UStoredMultValuesSubsystem* SM = UGameplayStatics::GetGameInstance(GetWorld())->GetSubsystem<UStoredMultValuesSubsystem>();
+	SlideMultValue=SM->GetMultValue(Slide);
+	JumpMultValue=SM->GetMultValue(Jump);
+	KickMultValue=SM->GetMultValue(Kick);
+	DashMultValue=SM->GetMultValue(Dash);
+	GrindMultValue=SM->GetMultValue(Grind);
+	MantleMultValue=SM->GetMultValue(Mantle);
+	KillMultValue=SM->GetMultValue(Kill);
+	GrappleMultValue=SM->GetMultValue(Grapple);
+	HeadshotMultValue=SM->GetMultValue(Headshot);
 }
 
 void ACocaineGameMode::AddToHistory(const EMultType& MultType)

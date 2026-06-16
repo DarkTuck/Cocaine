@@ -53,7 +53,7 @@ class ACocaineGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	constexpr static int DefaultMultValue=20;
-	
+public:
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int SlideMultValue=DefaultMultValue;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int JumpMultValue=DefaultMultValue;
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|Mult System|Mult Values") int KickMultValue=DefaultMultValue;
@@ -83,8 +83,9 @@ class ACocaineGameMode : public AGameModeBase
 	
 	
 	UPROPERTY(EditDefaultsOnly,Category="Scoring|UI") TSubclassOf<UMultSystemUI> UIWidgetClass;
+	UPROPERTY(BlueprintReadWrite)
 	TObjectPtr<UMultSystemUI> UIWidget;
-	
+private:
 	int SavedScore;
 	static constexpr int StartingMult=1;
 	FCurrents Currents{StartingScore,StartingMult};
@@ -157,6 +158,8 @@ public:
 	
 	
 private:
+	
+	void LoadMultValues();
 	
 	void AddToHistory(const EMultType& MultType);
 	void AddToDisplayedHistory();
