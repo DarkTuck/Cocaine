@@ -1526,77 +1526,104 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 	{
 		return;
 	}
-
-	RestorePreAdditiveRootMotionVelocity();
-
-	if( !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity() )
+	
+	bJustTeleported = false;
+	bool bCheckedFall = false;
+	bool bTriedLedgeMove = false;
+	float remainingTime = deltaTime;
+	while ((remainingTime >= MIN_TICK_TIME) && (Iterations < MaxSimulationIterations) && CharacterOwner && (
+		CharacterOwner->Controller || bRunPhysicsWithNoController || (CharacterOwner->GetLocalRole() ==
+			ROLE_SimulatedProxy)))
 	{
-		if( !bIsGrappling && Acceleration.IsZero() )
+		Iterations++;
+		bJustTeleported = false;
+		const float timeTick = GetSimulationTimeStep(remainingTime, Iterations);
+		remainingTime -= timeTick;
+		RestorePreAdditiveRootMotionVelocity();
+
+		if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+		{
+			if (!bIsGrappling && Acceleration.IsZero())
+			{
+				Velocity = FVector::ZeroVector;
+			}
+			const float Friction = 0.5f * GetPhysicsVolume()->FluidFriction;
+			CalcVelocity(timeTick, Friction, true, GetMaxBrakingDeceleration());
+		}
+
+		ApplyRootMotionToVelocity(timeTick);
+
+		Iterations++;
+		bJustTeleported = false;
+
+		FVector OldLocation = UpdatedComponent->GetComponentLocation();
+		FVector GrappleDirection = GrapplingPoint - OldLocation;
+		GrappleDirection.Normalize();
+		GrappleDirection *= GrappleProperties.GrappleForce;
+		const FVector Adjusted = (GrappleDirection + Velocity) * timeTick;
+		FHitResult Hit(1.f);
+		SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
+
+		GrappleProperties.GrappleCable->EndLocation = CocaineCharacterOwner->GetActorTransform().
+		                                                                     InverseTransformPosition(GrapplingPoint);
+
+		if (Velocity.Length() < GetMaxSpeed())
 		{
 			Velocity = FVector::ZeroVector;
 		}
-		const float Friction = 0.5f * GetPhysicsVolume()->FluidFriction;
-		CalcVelocity(deltaTime, Friction, true, GetMaxBrakingDeceleration());
-	}
 
-	ApplyRootMotionToVelocity(deltaTime);
-
-	Iterations++;
-	bJustTeleported = false;
-
-	FVector OldLocation = UpdatedComponent->GetComponentLocation();
-	FVector GrappleDirection = GrapplingPoint-OldLocation;
-	GrappleDirection.Normalize();
-	GrappleDirection*=GrappleProperties.GrappleForce;
-	const FVector Adjusted = (GrappleDirection+Velocity) * deltaTime;
-	FHitResult Hit(1.f);
-	SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
-	
-	GrappleProperties.GrappleCable->EndLocation=CocaineCharacterOwner->GetActorTransform().InverseTransformPosition(GrapplingPoint);
-	
-	if (Velocity.Length()<GetMaxSpeed())
-	{
-		Velocity = FVector::ZeroVector;
-	}
-
-	if (Hit.Time < 1.f)
-	{
-		const FVector VelDir = Velocity.GetSafeNormal();
-		const float UpDown = VelDir | GetGravityDirection();
-
-		bool bSteppedUp = false;
-		if ((FMath::Abs(GetGravitySpaceZ(Hit.ImpactNormal)) < 0.2f) && (UpDown < 0.5f) && (UpDown > -0.2f) && CanStepUp(Hit))
+		if (Hit.Time < 1.f)
 		{
-			const FVector::FReal StepZ = GetGravitySpaceZ(UpdatedComponent->GetComponentLocation());
-			bSteppedUp = StepUp(GetGravityDirection(), Adjusted * (1.f - Hit.Time), Hit);
-			if (bSteppedUp)
+			const FVector VelDir = Velocity.GetSafeNormal();
+			const float UpDown = VelDir | GetGravityDirection();
+
+			bool bSteppedUp = false;
+			if ((FMath::Abs(GetGravitySpaceZ(Hit.ImpactNormal)) < 0.2f) && (UpDown < 0.5f) && (UpDown > -0.2f) &&
+				CanStepUp(Hit))
 			{
-				const FVector::FReal LocationZ = GetGravitySpaceZ(UpdatedComponent->GetComponentLocation()) + (GetGravitySpaceZ(OldLocation) - StepZ);
-				SetGravitySpaceZ(OldLocation, LocationZ);
+				const FVector::FReal StepZ = GetGravitySpaceZ(UpdatedComponent->GetComponentLocation());
+				bSteppedUp = StepUp(GetGravityDirection(), Adjusted * (1.f - Hit.Time), Hit);
+				if (bSteppedUp)
+				{
+					const FVector::FReal LocationZ = GetGravitySpaceZ(UpdatedComponent->GetComponentLocation()) + (
+						GetGravitySpaceZ(OldLocation) - StepZ);
+					SetGravitySpaceZ(OldLocation, LocationZ);
+				}
+			}
+
+			if (!bSteppedUp)
+			{
+				//adjust and try again
+				HandleImpact(Hit, deltaTime, Adjusted);
+				SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
 			}
 		}
 
-		if (!bSteppedUp)
+		if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
 		{
-			//adjust and try again
-			HandleImpact(Hit, deltaTime, Adjusted);
-			SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
+			Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / timeTick;
+		}
+
+		if (!Safe_bWantsToGrapple || (GrappleProperties.EndGrappleByDistance && FVector::DistSquared(
+			GrapplingPoint, UpdatedComponent->GetComponentLocation()) < GrappleProperties.GrappleMinDistance))
+		{
+			//ApplyVelocityBraking(deltaTime,BrakingFriction,GetMaxBrakingDeceleration());
+			Velocity /= 2;
+			Safe_bWantsToGrapple = false;
+			SetMovementMode(MOVE_Falling);
+			StartNewPhysics(deltaTime, Iterations);
+		}
+		// If we didn't move at all this iteration then abort (since future iterations will also be stuck).
+		if (UpdatedComponent->GetComponentLocation() == OldLocation)
+		{
+			remainingTime = 0.f;
+			break;
 		}
 	}
-
-	if( !bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity() )
-	{
-		Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / deltaTime;
-	}
+	FHitResult Hit;
+	FQuat NewRotation = FRotationMatrix::MakeFromXZ(Velocity.GetSafeNormal2D(), FVector::UpVector).ToQuat();
+	SafeMoveUpdatedComponent(FVector::ZeroVector, NewRotation, false, Hit);
 	
-	if (!Safe_bWantsToGrapple || (GrappleProperties.EndGrappleByDistance && FVector::DistSquared(GrapplingPoint,UpdatedComponent->GetComponentLocation())<GrappleProperties.GrappleMinDistance))
-	{
-		//ApplyVelocityBraking(deltaTime,BrakingFriction,GetMaxBrakingDeceleration());
-		Velocity/=2;
-		Safe_bWantsToGrapple=false;
-		SetMovementMode(MOVE_Falling);
-		StartNewPhysics(deltaTime,Iterations);
-	}
 }
 
 
