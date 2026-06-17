@@ -629,7 +629,7 @@ void UCocaineMovementComponent::PhysSlide(float DeltaTime, int32 Iterations)
 				bTriedLedgeMove = true;
 
 				// Try new movement direction
-				Velocity = NewDelta / timeTick;
+				Velocity = NewDelta * timeTick;
 				remainingTime += timeTick;
 				continue;
 			}
@@ -863,7 +863,7 @@ void UCocaineMovementComponent::PhysProne(float DeltaTime, int32 Iterations)
 				bTriedLedgeMove = true;
 
 				// Try new movement direction
-				Velocity = NewDelta/timeTick;
+				Velocity = NewDelta*timeTick;
 				remainingTime += timeTick;
 				Iterations--;
 				continue;
@@ -1409,7 +1409,7 @@ void UCocaineMovementComponent::PhysGrind(float DeltaTime, int32 Iterations)
 	FHitResult Hit{};
 	SafeMoveUpdatedComponent(NewLocation-LastLocation,NewRotation,true,Hit);
 	
-	Velocity = (UpdatedComponent->GetComponentLocation()-LastLocation)/DeltaTime;
+	Velocity = (UpdatedComponent->GetComponentLocation()-LastLocation)*DeltaTime;
 	if (!bShouldContinueGrinding) SetMovementMode(MOVE_Falling);
 	SLOG(TEXT("Distance Along Spline: ") + FString::SanitizeFloat(GrindState.DistanceAlongGrind) + TEXT(""))
 }
@@ -1508,7 +1508,7 @@ bool UCocaineMovementComponent::TryGrapple()
 
 void UCocaineMovementComponent::EnterGrapple(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
-	Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Grapple);
+	//Cast<ACocaineGameMode>(GetWorld()->GetAuthGameMode())->AddMult(Grapple);
 	GrappleProperties.GrappleCable->SetVisibility(true);
 }
 
@@ -1586,7 +1586,7 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 
 	if( !bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity() )
 	{
-		Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / deltaTime;
+		Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) * deltaTime;
 	}
 	
 	if (!Safe_bWantsToGrapple || (GrappleProperties.EndGrappleByDistance && FVector::DistSquared(GrapplingPoint,UpdatedComponent->GetComponentLocation())<GrappleProperties.GrappleMinDistance))
