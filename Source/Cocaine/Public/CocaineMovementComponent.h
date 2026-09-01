@@ -25,6 +25,7 @@ enum ECustomMovementMode
 	CMOVE_Mantle UMETA(DisplayName="Mantle"),
 	CMOVE_Grind UMETA(DisplayName="Grind"),
 	CMOVE_Grapple UMETA(DisplayName="Grapple"),
+	CMOVE_WallRun UMETA(DisplayName="WallRun"),
 	CMOVE_MAX 	UMETA(Hidden),
 };
 
@@ -158,6 +159,20 @@ struct FGrappleProperties
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleSpeedBoost = 0.f;
 	UPROPERTY(EditDefaultsOnly,Category="Grappling") float GrappleCooldownDuration=0.3f;
 };
+USTRUCT()
+struct FWallRunProperties
+{
+	GENERATED_BODY()
+	// Wall Run
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|WallRun") float WallRunMinSpeed=200.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|WallRun") float WallRunMaxSpeed=800.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|WallRun") float WallRunMaxVerticalSpeed=200.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|WallRun") float WallRunPullAwayAngle=75.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|WallRun") float WallRunAttractionForce=200.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|WallRun") float WallRunMinHeight=50.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|WallRun") float WallRunJumpOffForce=300.f;
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|WallRun") UCurveFloat* WallRunGravityScaleCurve;
+};
 UCLASS()
 class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 {
@@ -184,6 +199,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 		uint8 Saved_bWantsToProne:1;
 		uint8 Saved_bHadAnimRootMotion:1;
 		uint8 Saved_bTransitionFinished:1;
+		uint8 Saved_bWallRunIsRight:1;
 		
 
 		FSavedMove_Cocaine();
@@ -219,6 +235,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FGrindProperties GrindProperties{};
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FKickProperties KickProperties{};
 	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FGrappleProperties GrappleProperties{};
+	UPROPERTY(EditDefaultsOnly,Category="MovementSettings|Defaults") FWallRunProperties WallRunProperties{};
 	
 	UPROPERTY() FGrindState GrindState{};
 	
@@ -236,6 +253,7 @@ class COCAINE_API UCocaineMovementComponent : public UCharacterMovementComponent
 	
 	bool Safe_bHadAnimRootMotion;
 	bool Safe_bPrevWantsToCrouch;
+	bool Safe_bWallRunIsRight;
 	
 	bool bDashedInAir{false};
 	bool bCanSlide{true};
@@ -287,6 +305,7 @@ public:
 	virtual float GetMaxBrakingDeceleration() const override;
 	float GetSpeedBoost(uint8 Mode) const;
 	virtual bool CanAttemptJump() const override;
+	virtual bool DoJump(bool bReplayingMoves) override;
 	virtual  void AddInputVector(FVector WorldVector, bool bForce = false) override;
 protected:
 	virtual void InitializeComponent() override;
@@ -358,6 +377,7 @@ private:
 	bool TryGrapple();
 	void EnterGrapple(EMovementMode PrevMode,ECustomMovementMode PrevCustomMode);
 	void ExitGrapple();
+	void PhysGrappleBackup(float deltaTime, int32 Iterations);
 	void PhysGrapple(float DeltaTime,int32 Iterations);
 public:
 	void SetGrappleCable(class UCableComponent* GrappleCable){GrappleProperties.GrappleCable = GrappleCable;};
@@ -365,7 +385,14 @@ public:
 	// Flying
 public:
 	FORCEINLINE void SetFlying(const bool Set) {SetMovementMode(Set?MOVE_Flying:MOVE_Walking);}
-	
+
+	// WallRun
+private:
+	bool TryWallRun();
+	void PhysWallRun(float DeltaTime,int32 Iterations);
+	void EnterWallRun(EMovementMode PrevMode,ECustomMovementMode PrevCustomMode);
+	void ExitWallRun();
+
 	//Helpers
 private:
 	bool IsServer() const;
@@ -390,8 +417,11 @@ public:
 	UFUNCTION(BlueprintCallable) void GrapplePressed();
 	UFUNCTION(BlueprintCallable) void GrappleReleased();
 	
-	UFUNCTION(BlueprintCallable) bool IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const;
-	UFUNCTION(BlueprintCallable) bool IsMovementMode(EMovementMode InMovementMode) const;
+	UFUNCTION(BlueprintPure) bool IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const;
+	UFUNCTION(BlueprintPure) bool IsMovementMode(EMovementMode InMovementMode) const;
+	
+	UFUNCTION(BlueprintPure) bool IsWallRunning() const{return IsCustomMovementMode(CMOVE_WallRun);}
+	UFUNCTION(BlueprintPure) bool WallRunningIsRight() const{return Safe_bWallRunIsRight;}
 	
 	// Proxy Replication
 public:

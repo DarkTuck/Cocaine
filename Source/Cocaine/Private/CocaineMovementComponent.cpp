@@ -55,6 +55,10 @@ bool UCocaineMovementComponent::FSavedMove_Cocaine::CanCombineWith(const FSavedM
 	{
 		return false;
 	}
+	if (Saved_bWallRunIsRight!=NewCocaineMove->Saved_bWallRunIsRight)
+	{
+		return false;
+	}
 	return FSavedMove_Character::CanCombineWith(NewMove, InCharacter, MaxDelta);
 }
 
@@ -72,6 +76,8 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::Clear()
 	
 	Saved_bWantsToProne = 0;
 	Saved_bPrevWantsToCrouch = 0;
+	
+	Saved_bWallRunIsRight = 0;
 }
 
 uint8 UCocaineMovementComponent::FSavedMove_Cocaine::GetCompressedFlags() const
@@ -99,6 +105,8 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::SetMoveFor(ACharacter* C, fl
 	
 	Saved_bHadAnimRootMotion = CharacterMovement->Safe_bHadAnimRootMotion;
 	Saved_bTransitionFinished = CharacterMovement->Safe_bTransitionFinished;
+	
+	Saved_bWallRunIsRight = CharacterMovement->Safe_bWallRunIsRight;
 }
 
 void UCocaineMovementComponent::FSavedMove_Cocaine::PrepMoveFor(ACharacter* C)
@@ -114,6 +122,8 @@ void UCocaineMovementComponent::FSavedMove_Cocaine::PrepMoveFor(ACharacter* C)
 	CharacterMovement->CocaineCharacterOwner->bPressedCocaineJump=Saved_bPressedCocaineJump;
 	CharacterMovement->Safe_bHadAnimRootMotion=Saved_bHadAnimRootMotion;
 	CharacterMovement->Safe_bTransitionFinished=Saved_bTransitionFinished;
+	
+	CharacterMovement->Safe_bWallRunIsRight=Saved_bWallRunIsRight;
 }
 #pragma endregion
 
@@ -197,6 +207,8 @@ float UCocaineMovementComponent::GetMaxSpeed() const
 		return GrindProperties.GrindMaxSpeed;
 	case CMOVE_Grapple:
 		return GrappleProperties.GrappleMaxSpeed;
+	case CMOVE_WallRun:
+		return WallRunProperties.WallRunMaxSpeed;
 	default:
 ;		UE_LOG(LogTemp,Fatal,TEXT("Invalid Movement Mode"));
 		return -1.f;
@@ -243,7 +255,27 @@ float UCocaineMovementComponent::GetSpeedBoost(uint8 Mode = CMOVE_None) const
 
 bool UCocaineMovementComponent::CanAttemptJump() const
 {
-	return Super::CanAttemptJump() || IsCustomMovementMode(CMOVE_Grind);
+	return Super::CanAttemptJump() || IsCustomMovementMode(CMOVE_Grind) || IsWallRunning();
+}
+
+bool UCocaineMovementComponent::DoJump(bool bReplayingMoves)
+{
+	bool bWasWallRunning = IsWallRunning();
+	if (Super::DoJump(bReplayingMoves))
+	{
+		if (bWasWallRunning)
+		{
+			FVector Start = UpdatedComponent->GetComponentLocation();
+			FVector CastDelta = UpdatedComponent->GetRightVector() * CapR() * 2;
+			FVector End = Safe_bWallRunIsRight ? Start + CastDelta : Start - CastDelta;
+			auto Params = CocaineCharacterOwner->GetIgnoreCharacterParams();
+			FHitResult WallHit;
+			GetWorld()->LineTraceSingleByProfile(WallHit, Start, End, TEXT("BlockAll"), Params);
+			Velocity += WallHit.Normal * WallRunProperties.WallRunJumpOffForce;
+		}
+		return true;
+	};
+	return false;
 }
 
 void UCocaineMovementComponent::AddInputVector(FVector WorldVector, bool bForce)
@@ -1519,8 +1551,7 @@ void UCocaineMovementComponent::ExitGrapple()
 	
 	GrappleProperties.GrappleCable->SetVisibility(false);
 }
-
-void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
+void UCocaineMovementComponent::PhysGrappleBackup(float deltaTime, int32 Iterations)
 {
 	if (deltaTime < MIN_TICK_TIME)
 	{
@@ -1538,7 +1569,12 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 		Iterations++;
 		bJustTeleported = false;
 		const float timeTick = GetSimulationTimeStep(remainingTime, Iterations);
+		SLOG(FString::Printf(TEXT("DeltaTime: %f"),deltaTime));
+		SLOG(FString::Printf(TEXT("TimeTick: %f"),timeTick));
+		SLOG(FString::Printf(TEXT("Iterations: %d"),Iterations));
+		SLOG(FString::Printf(TEXT("MaxIterations: %d"),MaxSimulationIterations));
 		remainingTime -= timeTick;
+		
 		RestorePreAdditiveRootMotionVelocity();
 
 		if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
@@ -1552,10 +1588,7 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 		}
 
 		ApplyRootMotionToVelocity(timeTick);
-
-		Iterations++;
-		bJustTeleported = false;
-
+		
 		FVector OldLocation = UpdatedComponent->GetComponentLocation();
 		FVector GrappleDirection = GrapplingPoint - OldLocation;
 		GrappleDirection.Normalize();
@@ -1571,7 +1604,8 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 		{
 			Velocity = FVector::ZeroVector;
 		}
-
+		
+		// Handle pulling away from obstacles
 		if (Hit.Time < 1.f)
 		{
 			const FVector VelDir = Velocity.GetSafeNormal();
@@ -1598,12 +1632,12 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 				SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
 			}
 		}
-
+		
 		if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
 		{
 			Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / timeTick;
 		}
-
+		
 		if (!Safe_bWantsToGrapple || (GrappleProperties.EndGrappleByDistance && FVector::DistSquared(
 			GrapplingPoint, UpdatedComponent->GetComponentLocation()) < GrappleProperties.GrappleMinDistance))
 		{
@@ -1613,6 +1647,8 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 			SetMovementMode(MOVE_Falling);
 			StartNewPhysics(deltaTime, Iterations);
 		}
+		SLOG(FString::Printf(TEXT("OldLocation: %s"), *OldLocation.ToString()))
+		SLOG(FString::Printf(TEXT("NewLocation: %s"), *UpdatedComponent->GetComponentLocation().ToString()))
 		// If we didn't move at all this iteration then abort (since future iterations will also be stuck).
 		if (UpdatedComponent->GetComponentLocation() == OldLocation)
 		{
@@ -1624,6 +1660,84 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 	FQuat NewRotation = FRotationMatrix::MakeFromXZ(Velocity.GetSafeNormal2D(), FVector::UpVector).ToQuat();
 	SafeMoveUpdatedComponent(FVector::ZeroVector, NewRotation, false, Hit);
 	
+}
+void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
+{
+	if (deltaTime < MIN_TICK_TIME)
+	{
+		return;
+	}
+
+	RestorePreAdditiveRootMotionVelocity();
+
+	if( !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity() )
+	{
+		if( !bIsGrappling && Acceleration.IsZero() )
+		{
+			Velocity = FVector::ZeroVector;
+		}
+		const float Friction = 0.5f * GetPhysicsVolume()->FluidFriction;
+		CalcVelocity(deltaTime, Friction, true, GetMaxBrakingDeceleration());
+	}
+
+	ApplyRootMotionToVelocity(deltaTime);
+
+	Iterations++;
+	bJustTeleported = false;
+
+	FVector OldLocation = UpdatedComponent->GetComponentLocation();
+	FVector GrappleDirection = GrapplingPoint-OldLocation;
+	GrappleDirection.Normalize();
+	GrappleDirection*=GrappleProperties.GrappleForce;
+	const FVector Adjusted = (GrappleDirection+Velocity) * deltaTime;
+	FHitResult Hit(1.f);
+	SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
+	
+	GrappleProperties.GrappleCable->EndLocation=CocaineCharacterOwner->GetActorTransform().InverseTransformPosition(GrapplingPoint);
+	
+	if (Velocity.Length()<GetMaxSpeed())
+	{
+		Velocity = FVector::ZeroVector;
+	}
+
+	if (Hit.Time < 1.f)
+	{
+		const FVector VelDir = Velocity.GetSafeNormal();
+		const float UpDown = VelDir | GetGravityDirection();
+
+		bool bSteppedUp = false;
+		if ((FMath::Abs(GetGravitySpaceZ(Hit.ImpactNormal)) < 0.2f) && (UpDown < 0.5f) && (UpDown > -0.2f) && CanStepUp(Hit))
+		{
+			const FVector::FReal StepZ = GetGravitySpaceZ(UpdatedComponent->GetComponentLocation());
+			bSteppedUp = StepUp(GetGravityDirection(), Adjusted * (1.f - Hit.Time), Hit);
+			if (bSteppedUp)
+			{
+				const FVector::FReal LocationZ = GetGravitySpaceZ(UpdatedComponent->GetComponentLocation()) + (GetGravitySpaceZ(OldLocation) - StepZ);
+				SetGravitySpaceZ(OldLocation, LocationZ);
+			}
+		}
+
+		if (!bSteppedUp)
+		{
+			//adjust and try again
+			HandleImpact(Hit, deltaTime, Adjusted);
+			SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
+		}
+	}
+
+	if( !bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity() )
+	{
+		Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / deltaTime;
+	}
+	
+	if (!Safe_bWantsToGrapple || (GrappleProperties.EndGrappleByDistance && FVector::DistSquared(GrapplingPoint,UpdatedComponent->GetComponentLocation())<GrappleProperties.GrappleMinDistance))
+	{
+		//ApplyVelocityBraking(deltaTime,BrakingFriction,GetMaxBrakingDeceleration());
+		Velocity/=2;
+		Safe_bWantsToGrapple=false;
+		SetMovementMode(MOVE_Falling);
+		StartNewPhysics(deltaTime,Iterations);
+	}
 }
 
 
