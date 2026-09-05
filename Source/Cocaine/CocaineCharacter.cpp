@@ -12,6 +12,7 @@
 #include "Public/CocaineMovementComponent.h"
 #include "CableComponent.h"
 #include "CocaineGameMode.h"
+#include "MovementDynamicCamera.h"
 
 void ACocaineCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -38,7 +39,7 @@ ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer
 	FirstPersonMesh->SetCollisionProfileName(FName("NoCollision"));
 
 	// Create the Camera Component	
-	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("First Person Camera"));
+	FirstPersonCameraComponent = CreateDefaultSubobject<UMovementDynamicCamera>(TEXT("First Person Camera"));
 	FirstPersonCameraComponent->SetupAttachment(FirstPersonMesh, FName("head"));
 	FirstPersonCameraComponent->SetRelativeLocationAndRotation(FVector(-2.8f, 5.89f, 0.0f), FRotator(0.0f, 90.0f, -90.0f));
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
