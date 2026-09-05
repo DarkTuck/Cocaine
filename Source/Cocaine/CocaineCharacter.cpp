@@ -21,15 +21,16 @@ void ACocaineCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 }
 
 ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer)
-: Super(ObjectInitializer.SetDefaultSubobjectClass<UCocaineMovementComponent>(ACharacter::CharacterMovementComponentName))
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCocaineMovementComponent>(
+		  ACharacter::CharacterMovementComponentName))
 {
-	CocaineMovementComponent=Cast<UCocaineMovementComponent>(GetCharacterMovement());
+	CocaineMovementComponent = Cast<UCocaineMovementComponent>(GetCharacterMovement());
 	CocaineMovementComponent->SetIsReplicated(true);
-	
+
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
+	GetCapsuleComponent()->InitCapsuleSize(55.f, RegularCapsuleHH);
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
-	
+
 	// Create the first person mesh that will be viewed only by this character's owner
 	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("First Person Mesh"));
 
@@ -41,7 +42,8 @@ ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer
 	// Create the Camera Component	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UMovementDynamicCamera>(TEXT("First Person Camera"));
 	FirstPersonCameraComponent->SetupAttachment(FirstPersonMesh, FName("head"));
-	FirstPersonCameraComponent->SetRelativeLocationAndRotation(FVector(-2.8f, 5.89f, 0.0f), FRotator(0.0f, 90.0f, -90.0f));
+	FirstPersonCameraComponent->SetRelativeLocationAndRotation(FVector(-2.8f, 5.89f, 0.0f),
+	                                                           FRotator(0.0f, 90.0f, -90.0f));
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 	FirstPersonCameraComponent->bEnableFirstPersonFieldOfView = true;
 	FirstPersonCameraComponent->bEnableFirstPersonScale = true;
@@ -52,13 +54,13 @@ ACocaineCharacter::ACocaineCharacter(const FObjectInitializer& ObjectInitializer
 	GetMesh()->SetOwnerNoSee(true);
 	GetMesh()->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::WorldSpaceRepresentation;
 
-	GetCapsuleComponent()->SetCapsuleSize(34.0f, 96.0f);
+	GetCapsuleComponent()->SetCapsuleSize(34.0f, RegularCapsuleHH);
 
 	// Configure character movement
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
-	
-	GrappleCable=CreateDefaultSubobject<UCableComponent>(TEXT("GrappleCable"));
+
+	GrappleCable = CreateDefaultSubobject<UCableComponent>(TEXT("GrappleCable"));
 	GrappleCable->SetupAttachment(FirstPersonCameraComponent);
 	GrappleCable->SetVisibility(false);
 }
@@ -202,6 +204,15 @@ void ACocaineCharacter::StopSlowMo()
  * As UT3 uses math for this ability, and for now as I am not entirely sure how it's working,
  * the code is copied/updated for the newer engine while cutting out stuff we don't use/need
  * When I get better understanding, then maybe this code will be more unique for our purpose */
+
+void ACocaineCharacter::SetCapsuleHH(const bool bShouldReduceCapsuleHeight) const
+{
+	GetCapsuleComponent()->SetCapsuleSize(34.0f, bShouldReduceCapsuleHeight ? ReducedCapsuleHH : RegularCapsuleHH);
+#if WITH_EDITOR
+	DrawDebugCapsule(GetWorld(),GetActorLocation(),GetCapsuleComponent()->GetScaledCapsuleHalfHeight(),GetCapsuleComponent()->GetScaledCapsuleRadius(),FQuat(GetActorRotation()),FColor::Red,false,1.f);
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString::Printf(TEXT("Capsule Height: %f"), GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
+#endif
+}
 
 FVector ACocaineCharacter::GetHeadLocation(float PredictionTime)
 {

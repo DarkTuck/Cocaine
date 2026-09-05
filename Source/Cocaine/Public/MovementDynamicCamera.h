@@ -56,5 +56,5 @@ private:
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void BeginPlay() override;
-	bool ShouldExecute();
+	bool ShouldExecute() const;
 };

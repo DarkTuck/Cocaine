@@ -30,7 +30,6 @@ float MacroDuration = 2.f;
 #define CAPSULE(x,c)
 #define SPHERE(c,r,color)
 #endif
-
 #pragma region Saved Move
 UCocaineMovementComponent::FSavedMove_Cocaine::FSavedMove_Cocaine() : Saved_bWantsToSprint(0), Saved_bWantsToDash(0),
                                                                       Saved_bWantsToKick(0),
@@ -290,6 +289,18 @@ void UCocaineMovementComponent::AddInputVector(FVector WorldVector, bool bForce)
 // Movement Pipeline
 void UCocaineMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
+	// Reduce HH
+	if (bWantsToCrouch||Safe_bWantsToDash)
+	{
+		if (CocaineCharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()!=CocaineCharacterOwner->GetReducedCapsuleHH())
+		CocaineCharacterOwner->SetCapsuleHH(true);
+	}
+	else
+	{
+		if (CocaineCharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()!=CocaineCharacterOwner->GetRegularCapsuleHH())
+		CocaineCharacterOwner->SetCapsuleHH(false);
+	}
+	
 	// Slide
 	if (MovementMode==MOVE_Walking&&bWantsToCrouch&&Safe_bPrevWantsToCrouch) // Enter
 	{
@@ -1007,6 +1018,7 @@ bool UCocaineMovementComponent::CanDash() const
 
 void UCocaineMovementComponent::PerformDash()
 {
+	CocaineCharacterOwner->SetCapsuleHH(true);
 	bDashedInAir=IsMovementMode(MOVE_Falling) || IsMovementMode(MOVE_Flying) || IsCustomMovementMode(CMOVE_Grapple);
 	
 	DashStartTime=GetTS();
@@ -1024,10 +1036,12 @@ void UCocaineMovementComponent::PerformDash()
 	SetMovementMode(MOVE_Falling);
 	
 	DashStartDelegate.Broadcast();
+	CocaineCharacterOwner->SetCapsuleHH(false);
 }
 
 void UCocaineMovementComponent::PerformDashRootMotion()
 {
+	CocaineCharacterOwner->SetCapsuleHH(true);
 	bDashedInAir=IsMovementMode(MOVE_Falling) || IsMovementMode(MOVE_Flying) || IsCustomMovementMode(CMOVE_Grapple);
 	DashStartTime=GetTS();
 	
@@ -1036,6 +1050,7 @@ void UCocaineMovementComponent::PerformDashRootMotion()
 	CharacterOwner->PlayAnimMontage(DashProperties.DashMontage);
 	
 	DashStartDelegate.Broadcast();
+	CocaineCharacterOwner->SetCapsuleHH(false);
 }
 #pragma endregion
 
@@ -1684,7 +1699,11 @@ void UCocaineMovementComponent::PhysGrapple(float deltaTime, int32 Iterations)
 
 	Iterations++;
 	bJustTeleported = false;
-
+#if WITH_EDITOR
+	GEngine->AddOnScreenDebugMessage(0, 5.f, FColor::Red, TEXT("PhysGrapple"));
+	GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Black, FString::Printf(TEXT("Iterations: %d"),Iterations));
+	GEngine->AddOnScreenDebugMessage(2, 5.f, FColor::Cyan, FString::Printf(TEXT("DeltaTime: %f"),deltaTime));
+#endif
 	FVector OldLocation = UpdatedComponent->GetComponentLocation();
 	FVector GrappleDirection = GrapplingPoint-OldLocation;
 	GrappleDirection.Normalize();

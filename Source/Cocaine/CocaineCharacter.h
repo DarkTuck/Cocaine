@@ -167,6 +167,14 @@ protected:
 	UPROPERTY(BlueprintReadWrite,EditDefaultsOnly,Category="Grappling")
 	float MaxLineDistance {1000.f};
 	
+	constexpr static float ReducedCapsuleHH{48.f};
+	constexpr static float RegularCapsuleHH{96.f};
+	
+public:
+	void SetCapsuleHH(const bool bShouldReduceCapsuleHeight) const;
+	FORCEINLINE float GetReducedCapsuleHH() const {return ReducedCapsuleHH;}
+	FORCEINLINE float GetRegularCapsuleHH() const {return RegularCapsuleHH;}
+	
 	
 	// Headshots
 protected:

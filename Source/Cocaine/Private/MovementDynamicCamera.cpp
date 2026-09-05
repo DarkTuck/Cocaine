@@ -29,7 +29,7 @@ void UMovementDynamicCamera::BeginPlay()
 	MovementComponent=Cast<ACocaineCharacter>(GetOwner())->GetCocaineCharacterMovement();
 }
 
-bool UMovementDynamicCamera::ShouldExecute()
+bool UMovementDynamicCamera::ShouldExecute() const
 {
 	if (!MovementComponent) return false;
 	if (!bUseDynamicFOV) return false;
