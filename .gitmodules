@@ -1,3 +1,6 @@
 [submodule "Plugins/AsyncLoadingScreen"]
 	path = Plugins/AsyncLoadingScreen
 	url = https://github.com/truong-bui/AsyncLoadingScreen.git
+[submodule "Content/Assets/SVG/Keyboard/svg-keyboard-icons"]
+	path = Content/Assets/SVG/Keyboard/svg-keyboard-icons
+	url = https://github.com/georgemblack/svg-keyboard-icons.git
