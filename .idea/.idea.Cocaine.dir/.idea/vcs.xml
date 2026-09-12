@@ -2,6 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Content/Assets/SVG/Keyboard/svg-keyboard-icons" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Plugins/AsyncLoadingScreen" vcs="Git" />
   </component>
 </project>
